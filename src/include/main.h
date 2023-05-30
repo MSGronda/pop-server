@@ -4,6 +4,7 @@
 #include "../utils/include/selector.h"
 #include "../utils/include/buffer.h"
 #include "../pop3/include/pop3.h"
+#include "common.h"
 
 #include <stdio.h>
 #include <string.h>

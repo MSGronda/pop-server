@@ -3,11 +3,10 @@
 #define MAX_PENDING_CONNECTIONS 600
 #define SELECTOR_SIZE 1024
 
-
-#define ERROR_CATCH(msg, loc) error_msg = msg; goto loc;
-
 int main(){
-    
+    char * error_msg;
+
+
     // = = = = = CONFIGURACION DEL SOCKET = = = = = =
     
     // EXP: usamos IPv6 directamente porque puede aceptar conexiones 
@@ -16,7 +15,7 @@ int main(){
     int socket_fd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
     if(socket_fd < 0){
-        printf("AAAAAAAAA");
+        ERROR_CATCH("Error creating socket", finally)
     }
 
     // EXP: Deshabilito reportar si falla
@@ -32,17 +31,17 @@ int main(){
 
     // EXP: bindeo el socket
     if (bind(socket_fd, (struct sockaddr *) &address, sizeof(address)) < 0) {
-        printf("CCCCCCCCCC");
+        ERROR_CATCH("Error binding socket", finally)
     }
     
     // EXP: listeneo (?) el socket
     if(listen(socket_fd, MAX_PENDING_CONNECTIONS) < 0){
-        printf("DDDDDDDDDDDD");
+        ERROR_CATCH("Error listening to socket", finally)
     }
 
     // EXP: setea fd como NON_BLOCING;
     if(selector_fd_set_nio(socket_fd) == -1){
-        printf("EEEEEEEEEEEE");
+        ERROR_CATCH("Error setting socket as non-blocking", finally)
     }
 
     // = = = = = CONFIGURACION DEL SELECTOR = = = = = =
@@ -56,13 +55,13 @@ int main(){
         }
     };
     if (selector_init(&configuration) != 0){
-        printf("FFFFFFFFFFF");
+        ERROR_CATCH("Error initializing selector library", finally)
     }
 
     // EXP: genero un nuevo selector. Todos los socket y otras funcionalidades se "meten" a este selector
     fd_selector selector = selector_new(SELECTOR_SIZE);
     if(selector == NULL){
-        printf("GGGGGGGGGGG");
+        ERROR_CATCH("Error creating new selector", finally)
     }
 
     const struct fd_handler handlers = {
@@ -75,7 +74,7 @@ int main(){
     selector_status s = selector_register(selector, socket_fd, &handlers, OP_READ, NULL);
     
     if(s != SELECTOR_SUCCESS){
-        printf("HHHHHHHHHHHH");
+        ERROR_CATCH("Error registering selector", finally)
     }
 
     
@@ -83,9 +82,12 @@ int main(){
     while(1){
         s = selector_select(selector);
         if(s != SELECTOR_SUCCESS){
-            printf("IIIIIIIIIII");
+            ERROR_CATCH("Error executing select", finally)
         }
     }
 
+
+finally:
+    fprintf(stderr, "%s\n", error_msg);
     return 0;
 }

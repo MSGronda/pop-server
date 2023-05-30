@@ -93,6 +93,7 @@ static const struct fd_handler pop3_handlers ={
 };
 
 void pop3_passive_handler(struct selector_key *key){
+    char * error_msg;
     printf("A connection has been recieved\n");
 
     struct sockaddr_storage client_address;
@@ -104,28 +105,30 @@ void pop3_passive_handler(struct selector_key *key){
     const int client_fd = accept(key->fd, (struct sockaddr *)&client_address, &client_address_len);
 
     if(client_fd == -1){
-        printf("JJJJJJJJJ");
+        ERROR_CATCH("Error accepting client connection", finally)
     }
     
     // EXP: seteo como no bloqueante
     if(selector_fd_set_nio(client_fd) == -1){
-        printf("KKKKKKKKKKKK");
+        ERROR_CATCH("Error setting client socket as non-blocking", finally)
     }
 
     // EXP: hago el setup de toda la informacion del cliente: address, fd, buffers, maquina de estados, etc
     client_connection_data * new_client = setup_new_connection(client_fd, client_address);
     
     if(new_client == NULL){
-        printf("LLLLLLLLLLLL");
+        ERROR_CATCH("Error generating client connection data", finally)
     }
 
     // EXP: configuro todos los handlers para los distintos casos: read, write, close, block
     // EXP: lo registramos con el read dado que queremos que se "active" cuando el cliente manda algo
     if(selector_register(key->s, client_fd, &pop3_handlers, OP_READ, new_client) != SELECTOR_SUCCESS){
-        printf("MMMMMMMMMMMM");
+        ERROR_CATCH("Error registering client socket to select", finally)
     }
     
     // TODO: setup de las stats de conexion o algo asi
-
     return;
+
+finally:
+    fprintf(stderr, "%s\n", error_msg);
 }
