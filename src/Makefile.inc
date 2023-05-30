@@ -1,2 +1,1 @@
-CC = gcc 
-CFLAGS = -g --std=c11 -fsanitize=address  -Wall -Wextra -Wno-unused-parameter -pthread
+CFLAGS = -g --std=c11 -fsanitize=address  -Wall -Wextra -Wno-unused-parameter -pthread -pedantic -pedantic-errors -Wno-newline-eof -Wno-implicit-fallthrough
