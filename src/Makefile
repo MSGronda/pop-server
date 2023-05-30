@@ -1,30 +1,18 @@
-CC = gcc
-CFLAGS = g --std=c11 -fsanitize=address  -Wall -Wextra -Werror -Wno-unused-parameter -Wno-implicit-fallthrough-Wall
-TARGET = your_program
-OBJDIR = obj
-INCDIR = include
+include Makefile.inc
+TARGET = server.out
+INCDIR = ./include
+MAIN = main.c
 
-SRCDIRS = metrics persers pop3 utils
+SRCDIRS = utils pop3 parsers metrics
+SOURCES = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
+OBJS = $(SOURCES:.c=.o)
 
-SOURCES := $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
-OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
-
-vpath %.c $(SRCDIRS)
-
-
-all: $(TARGET)
-
-$(TARGET): $(OBJECTS)
-	$(CC) $(CFLAGS) $^ -o $@
-
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR)/$(dir $<) -c $< -o $@
-
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+all: $(OBJS)
+	cd utils; make all
+	$(CC) $(CFLAGS) $(MAIN) -I$(INCDIR) $(OBJS) -o $(TARGET)
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
-
+	cd utils; make clean
+	rm -f $(TARGET)
 
 .PHONY: all clean
