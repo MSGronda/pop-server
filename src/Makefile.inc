@@ -1,1 +1,1 @@
-CFLAGS = -g --std=c11 -fsanitize=address  -Wall -Wextra -Wno-unused-parameter -pthread -pedantic -pedantic-errors -Wno-implicit-fallthrough
+CFLAGS = -g --std=c11 -fsanitize=address -D_POSIX_C_SOURCE=200112L -Wall -Wextra -Wno-unused-parameter -pthread -pedantic -pedantic-errors -Wno-implicit-fallthrough

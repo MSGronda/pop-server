@@ -1,8 +1,6 @@
 #ifndef SELECTOR_H_W50GNLODsARolpHbsDsrvYvMsbT
 #define SELECTOR_H_W50GNLODsARolpHbsDsrvYvMsbT
 
-#define _POSIX_C_SOURCE 200112L // TODO:chequear. pselect no esta definido si no pones esto
-
 #include "./logger.h"
 
 #include <stdio.h>  // perror
