@@ -3,7 +3,7 @@
 #define MAX_PENDING_CONNECTIONS 600
 #define SELECTOR_SIZE 1024
 
-int main(){
+int main() {
     char * error_msg;
 
 
@@ -14,7 +14,7 @@ int main(){
 
     int socket_fd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
-    if(socket_fd < 0){
+    if(socket_fd < 0) {
         ERROR_CATCH("Error creating socket", finally)
     }
 
@@ -35,12 +35,12 @@ int main(){
     }
     
     // EXP: listeneo (?) el socket
-    if(listen(socket_fd, MAX_PENDING_CONNECTIONS) < 0){
+    if(listen(socket_fd, MAX_PENDING_CONNECTIONS) < 0) {
         ERROR_CATCH("Error listening to socket", finally)
     }
 
     // EXP: setea fd como NON_BLOCING;
-    if(selector_fd_set_nio(socket_fd) == -1){
+    if(selector_fd_set_nio(socket_fd) == -1) {
         ERROR_CATCH("Error setting socket as non-blocking", finally)
     }
 
@@ -54,13 +54,13 @@ int main(){
                 .tv_nsec = 0,
         }
     };
-    if (selector_init(&configuration) != 0){
+    if (selector_init(&configuration) != 0) {
         ERROR_CATCH("Error initializing selector library", finally)
     }
 
     // EXP: genero un nuevo selector. Todos los socket y otras funcionalidades se "meten" a este selector
     fd_selector selector = selector_new(SELECTOR_SIZE);
-    if(selector == NULL){
+    if(selector == NULL) {
         ERROR_CATCH("Error creating new selector", finally)
     }
 
@@ -73,15 +73,15 @@ int main(){
     // EXP: le especifico que cuando un cliente intenta leer del socket pasivo, que ejecute el handler
     selector_status s = selector_register(selector, socket_fd, &handlers, OP_READ, NULL);
     
-    if(s != SELECTOR_SUCCESS){
+    if(s != SELECTOR_SUCCESS) {
         ERROR_CATCH("Error registering selector", finally)
     }
 
     
     // EXP: loop infinito
-    while(1){
+    while(1) {
         s = selector_select(selector);
-        if(s != SELECTOR_SUCCESS){
+        if(s != SELECTOR_SUCCESS) {
             ERROR_CATCH("Error executing select", finally)
         }
     }
