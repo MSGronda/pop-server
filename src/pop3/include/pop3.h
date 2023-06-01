@@ -13,14 +13,15 @@
 // = = = = = MAQUINA DE ESTADOS = = = = = 
 
 typedef enum {
-    REQ_READ_STATE,
-    REQ_WRITE_STATE
-}io_stm_state;
+    GREETING_STATE,
+    COMMAND_READ_STATE,
+    COMMAND_WRITE_STATE
+}stm_io_state;
+
 
 // = = = = = ESTADO DE CLIENTE POP3 = = = = = 
 
-typedef enum {              // Comandos validos:
-    GREETING,
+typedef enum {
     AUTH_INI,               // CAPA, USER
     AUTH_PASSWORD,          // PASS
     TRANSACTION,            // LIST, RETR, DELE...

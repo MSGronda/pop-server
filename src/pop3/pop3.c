@@ -6,14 +6,19 @@
 
 // = = = = = MAQUINA DE ESTADOS DE E\S = = = = = 
 
-static const struct state_definition client_io_state_actions[] = {
+static const struct state_definition client_state_actions[] = {
     {
-        .state = REQ_READ_STATE,
-        .on_read_ready = &pop3_read_action,
+        .state = GREETING_STATE,
+        .on_arrival = &greeting_arrival,
+        .on_write_ready = &greeting_write,
     },
     {
-        .state = REQ_WRITE_STATE,
-        .on_write_ready = &pop3_write_action,
+        .state = COMMAND_READ_STATE,
+        .on_read_ready = &command_read,
+    },
+    {
+        .state = COMMAND_WRITE_STATE,
+        .on_write_ready = &command_write,
     },
 };
 
@@ -71,16 +76,16 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     buffer_init(&new_connection->write_buffer,BUFFER_SIZE, write_buffer);
     
 
-    // = = = = = INICIALIZO ESTADO DE CLIENTE = = = = = 
+    // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
     new_connection->state = AUTH_INI;
 
     // = = = = = INICIALIZO MAQUINA DE ESTADOS DE E/S = = = = = 
 
     // Seteo de la maquina de estados
-    new_connection->stm.initial = REQ_READ_STATE;
-    new_connection->stm.max_state = REQ_WRITE_STATE;
-    new_connection->stm.states = client_io_state_actions;
+    new_connection->stm.initial = GREETING_STATE;
+    new_connection->stm.max_state = COMMAND_WRITE_STATE;
+    new_connection->stm.states = client_state_actions;
 
     // Inicialización de la máquina de estados
     stm_init(&new_connection->stm);
@@ -145,7 +150,7 @@ void pop3_passive_handler(struct selector_key *key) {
 
     // EXP: configuro todos los handlers para los distintos casos: read, write, close, block
     // EXP: lo registramos con el read dado que queremos que se "active" cuando el cliente manda algo
-    if(selector_register(key->s, client_fd, &pop3_handlers, OP_READ, new_client) != SELECTOR_SUCCESS) {
+    if(selector_register(key->s, client_fd, &pop3_handlers, OP_WRITE, new_client) != SELECTOR_SUCCESS) {
         ERROR_CATCH("Error registering client socket to select", finally)
     }
     

@@ -3,7 +3,10 @@
 
 #include "./pop3.h"
 
-unsigned int pop3_read_action(struct selector_key *key);
-unsigned int pop3_write_action(struct selector_key *key);
+void greeting_arrival(const unsigned state, struct selector_key *key);
+unsigned int greeting_write(struct selector_key *key);
+
+unsigned int command_read(struct selector_key *key);
+unsigned int command_write(struct selector_key *key);
 
 #endif
