@@ -3,7 +3,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include "../../utils/include/logger.h"
 #include "../../utils/include/buffer.h"
 
 #define MAX_MSG_SIZE 512

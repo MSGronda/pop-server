@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
 #include "./include/parser.h"
-#include "./logger.h"
 
 #define COMMAND_LENGTH 4
 
