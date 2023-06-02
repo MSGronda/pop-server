@@ -161,20 +161,16 @@ static void command_recognition (input_parser * parser, const char c, bool * fin
 static void with_arguments_state (input_parser * parser, const char c, bool * finished, command_instance * current_command) {
 
     // Espacio indica que deberia venir argumento
-    if(c == ' ') {
+    if(c == ' ' && (current_command->type != CMD_PASS || parser->args_count == 0)) {    //el chequeo extra es para que PASS pueda recibir el argumento con espacios entre medio
         parser->is_expecting_new_arg = true;
     }
     // Leyendo un argumento
-    else if(c != '\r' && c != '\n') {
+    else if((c != '\r' && c != '\n' ) || ( c == ' ' && current_command->type == CMD_PASS && parser->args_count == 1)) {
         if (parser->is_expecting_new_arg){
             if(parser->args_count >= all_command_info[current_command->type].max_args)
                 parser->state = COMMAND_ERROR;
             else if(parser->arg_length == 0)
                 parser->arg_length++;
-            // else if(parser->arg_length > 1 /*&& parser->args_count < all_command_info[current_command->type].max_args*/) {
-            //     // parser->arg_length = 1;
-            //     parser->args_count++;
-            // }
             parser->args_count++;
             parser->is_expecting_new_arg = false;
         }
