@@ -6,21 +6,21 @@
 #include "../../utils/include/buffer.h"
 #include "../../include/common.h"
 #include "../../utils/include/stm.h"
-#include "./pop3_actions.h"
+#include "./socket_io_actions.h"
 #include <stdlib.h>
 
 
 // = = = = = MAQUINA DE ESTADOS = = = = = 
 
 typedef enum {
-    REQ_READ_STATE,
-    REQ_WRITE_STATE
-}io_stm_state;
+    SOCKET_IO_WRITE,
+    SOCKET_IO_READ
+}stm_io_state;
+
 
 // = = = = = ESTADO DE CLIENTE POP3 = = = = = 
 
-typedef enum {              // Comandos validos:
-    GREETING,
+typedef enum {
     AUTH_INI,               // CAPA, USER
     AUTH_PASSWORD,          // PASS
     TRANSACTION,            // LIST, RETR, DELE...

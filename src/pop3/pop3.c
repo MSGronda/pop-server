@@ -6,14 +6,14 @@
 
 // = = = = = MAQUINA DE ESTADOS DE E\S = = = = = 
 
-static const struct state_definition client_io_state_actions[] = {
+static const struct state_definition client_state_actions[] = {
     {
-        .state = REQ_READ_STATE,
-        .on_read_ready = &pop3_read_action,
+        .state = SOCKET_IO_WRITE,
+        .on_write_ready = &socket_write,
     },
     {
-        .state = REQ_WRITE_STATE,
-        .on_write_ready = &pop3_write_action,
+        .state = SOCKET_IO_READ,
+        .on_read_ready = &socket_read,
     },
 };
 
@@ -71,16 +71,28 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     buffer_init(&new_connection->write_buffer,BUFFER_SIZE, write_buffer);
     
 
-    // = = = = = INICIALIZO ESTADO DE CLIENTE = = = = = 
+    //  = = = = = MENSAJE INICIAL = = = = = 
+    // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
+    // TODO: CHECK!!!!
+
+    char * hello_msg = "+OK pop3-server ready\n";
+
+    // WARNING: asumo que hay suficiente espacio en el buffer para escribir todo el mensaje
+    for(int i=0; hello_msg[i]!=0; i++){
+        buffer_write(&new_connection->write_buffer, hello_msg[i]);
+    }
+
+
+    // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
     new_connection->state = AUTH_INI;
 
     // = = = = = INICIALIZO MAQUINA DE ESTADOS DE E/S = = = = = 
 
     // Seteo de la maquina de estados
-    new_connection->stm.initial = REQ_READ_STATE;
-    new_connection->stm.max_state = REQ_WRITE_STATE;
-    new_connection->stm.states = client_io_state_actions;
+    new_connection->stm.initial = SOCKET_IO_WRITE;
+    new_connection->stm.max_state = SOCKET_IO_READ;
+    new_connection->stm.states = client_state_actions;
 
     // Inicialización de la máquina de estados
     stm_init(&new_connection->stm);
@@ -92,11 +104,11 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 
 void pop3_read_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
-    stm_handler_read(stm, key);                             // TODO: return value (?)
+    unsigned int io_state = stm_handler_read(stm, key);                             // TODO: return value (?)
 }
 void pop3_write_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
-    stm_handler_write(stm, key);
+    unsigned int io_state = stm_handler_write(stm, key);
 }
 void pop3_block_handler(struct selector_key *key) {
     printf("BLOCK");                                        // TODO: make 
@@ -145,7 +157,7 @@ void pop3_passive_handler(struct selector_key *key) {
 
     // EXP: configuro todos los handlers para los distintos casos: read, write, close, block
     // EXP: lo registramos con el read dado que queremos que se "active" cuando el cliente manda algo
-    if(selector_register(key->s, client_fd, &pop3_handlers, OP_READ, new_client) != SELECTOR_SUCCESS) {
+    if(selector_register(key->s, client_fd, &pop3_handlers, OP_WRITE, new_client) != SELECTOR_SUCCESS) {
         ERROR_CATCH("Error registering client socket to select", finally)
     }
     
