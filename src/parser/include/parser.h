@@ -30,15 +30,15 @@ typedef struct command_instance {
 } command_instance;
 
 typedef enum command_state {
-    COMMAND_TYPE,
-    COMMAND_ARGS,
-    COMMAND_CRLF,
-    COMMAND_ERROR,
+    RECOGNITION_STATE,
+    WITH_ARGS_STATE,
+    NO_ARGS_STATE,
+    COMMAND_ERROR_STATE,
 } command_state;
 
 typedef struct input_parser {
     int                 line_size;
-    int                 crlf_state;  //0 NONE, 1 \r READ, 2 \n READ
+    int                 correctly_formed;  //0 NONE, 1 \r, 2 \n
     int                 arg_length;
     int                 args_count;
     int                 invalid_size;
