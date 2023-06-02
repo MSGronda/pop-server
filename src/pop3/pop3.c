@@ -8,17 +8,12 @@
 
 static const struct state_definition client_state_actions[] = {
     {
-        .state = GREETING_STATE,
-        .on_arrival = &greeting_arrival,
-        .on_write_ready = &greeting_write,
+        .state = SOCKET_IO_WRITE,
+        .on_write_ready = &socket_write,
     },
     {
-        .state = COMMAND_READ_STATE,
-        .on_read_ready = &command_read,
-    },
-    {
-        .state = COMMAND_WRITE_STATE,
-        .on_write_ready = &command_write,
+        .state = SOCKET_IO_READ,
+        .on_read_ready = &socket_read,
     },
 };
 
@@ -76,6 +71,18 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     buffer_init(&new_connection->write_buffer,BUFFER_SIZE, write_buffer);
     
 
+    //  = = = = = MENSAJE INICIAL = = = = = 
+    // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
+    // TODO: CHECK!!!!
+
+    char * hello_msg = "+OK pop3-server ready\n";
+
+    // WARNING: asumo que hay suficiente espacio en el buffer para escribir todo el mensaje
+    for(int i=0; hello_msg[i]!=0; i++){
+        buffer_write(&new_connection->write_buffer, hello_msg[i]);
+    }
+
+
     // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
     new_connection->state = AUTH_INI;
@@ -83,8 +90,8 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     // = = = = = INICIALIZO MAQUINA DE ESTADOS DE E/S = = = = = 
 
     // Seteo de la maquina de estados
-    new_connection->stm.initial = GREETING_STATE;
-    new_connection->stm.max_state = COMMAND_WRITE_STATE;
+    new_connection->stm.initial = SOCKET_IO_WRITE;
+    new_connection->stm.max_state = SOCKET_IO_READ;
     new_connection->stm.states = client_state_actions;
 
     // Inicialización de la máquina de estados
@@ -97,11 +104,11 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 
 void pop3_read_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
-    stm_handler_read(stm, key);                             // TODO: return value (?)
+    unsigned int io_state = stm_handler_read(stm, key);                             // TODO: return value (?)
 }
 void pop3_write_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
-    stm_handler_write(stm, key);
+    unsigned int io_state = stm_handler_write(stm, key);
 }
 void pop3_block_handler(struct selector_key *key) {
     printf("BLOCK");                                        // TODO: make 

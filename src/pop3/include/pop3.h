@@ -6,16 +6,15 @@
 #include "../../utils/include/buffer.h"
 #include "../../include/common.h"
 #include "../../utils/include/stm.h"
-#include "./pop3_actions.h"
+#include "./socket_io_actions.h"
 #include <stdlib.h>
 
 
 // = = = = = MAQUINA DE ESTADOS = = = = = 
 
 typedef enum {
-    GREETING_STATE,
-    COMMAND_READ_STATE,
-    COMMAND_WRITE_STATE
+    SOCKET_IO_WRITE,
+    SOCKET_IO_READ
 }stm_io_state;
 
 
