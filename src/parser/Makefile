@@ -10,5 +10,5 @@ all: $(OBJS)
 	$(CC) $(CFLAGS) -I$(INCLUDE) -c $<
 
 clean:
-	rm  -f $(OBJS)
+	rm  -f *.o
 	
