@@ -97,6 +97,10 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     // Inicialización de la máquina de estados
     stm_init(&new_connection->stm);
 
+    // = = = = = INICIALIZO DE PARSER DE COMANDOS = = = = = 
+    
+    parser_init(&new_connection->command_parser);
+
     return new_connection;
 }
 

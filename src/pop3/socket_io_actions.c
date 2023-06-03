@@ -1,6 +1,5 @@
 #include "include/socket_io_actions.h"
 
-
 // = = = = = SOCKET I/O = = = = = 
 
 unsigned int socket_read(struct selector_key *key) {
@@ -19,14 +18,20 @@ unsigned int socket_read(struct selector_key *key) {
     // EXP: avanzo el puntero de escritura en la libreria de buffers
     buffer_write_adv(&client_data->read_buffer, recieved_count);
 
-    //TODO: remove, esto es una demo para ver si funca.
-    while(buffer_can_read(&client_data->read_buffer) && buffer_can_write(&client_data->write_buffer)) {
-        const char c = buffer_read(&client_data->read_buffer);
-        buffer_write(&client_data->write_buffer,c);
+    // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
+    // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
+    bool finished;
+    size_t consumed;
+    command_state cmd_state = parser_consume(&client_data->command_parser, &client_data->read_buffer, &finished, &consumed);
+
+    // EXP: el comando esta incompleto, debemos "esperar" hasta que llegue mas informacion
+    if(!finished){
+        return SOCKET_IO_READ;
     }
 
-    selector_set_interest_key(key, OP_WRITE);
+    pop3_action_handler(client_data, cmd_state);
 
+    selector_set_interest_key(key, OP_WRITE);
     return SOCKET_IO_WRITE;
 }
 
