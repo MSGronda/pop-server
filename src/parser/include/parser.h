@@ -52,20 +52,13 @@ typedef struct input_parser {
     bool                is_expecting_new_arg;
 } input_parser;
 
-/**
- * Inicializa el parser
- */
+// Inicializa el parser
 void parser_init(input_parser * parser);
 
-/**
- * Entrega un char al parser. Deja a finished en true si se llego al final
- */
+// Consume de a 1 los caracteres que le pasas. Va guardando un estado interno del comando posible actual
 command_state parser_feed(input_parser * parser, const char c, bool * finished);
 
-/**
- * Consume chars de un buffer - llama a parser feed en un ciclo
- * Termina cuando se consumio todo
- */
+// Consume de a multiples caracteres. Se le pasa un buffer de la libreria. Va guardando un estado interno del comando posible actual
 command_state parser_consume(input_parser * parser, buffer* buffer, bool * finished,size_t * n_consumed);
 
 #endif

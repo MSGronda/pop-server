@@ -1,5 +1,13 @@
 #include "./include/parser.h"
 
+static void command_recognition (input_parser * parser, char c, bool * finished, command_instance * current_command);
+static void with_arguments_state (input_parser * parser, char c, bool * finished, command_instance * current_command);
+static void no_arguments_state (input_parser * parser, char c, bool * finished, command_instance * current_command);
+static void error_state (input_parser * parser, char c, bool * finished, command_instance * current_command);
+
+static void handle_parsed(command_instance * current_command, input_parser * parser, bool * finished, bool not_match);
+static bool is_multi(command_instance * command, int arg_count);
+
 #define COMMAND_LENGTH 4
 
 typedef struct command_info {
@@ -10,32 +18,16 @@ typedef struct command_info {
 } command_info;
 
 static const command_info all_command_info[] = {
-        { .type = CMD_USER, .name = "USER", .min_args = 1, .max_args = 1,} 
-        , 
-        { .type = CMD_PASS, .name = "PASS", .min_args = 1, .max_args = 1,} 
-        ,
-        { .type = CMD_RETR, .name = "RETR", .min_args = 1, .max_args = 1,} 
-        ,
-        { .type = CMD_LIST, .name = "LIST", .min_args = 0, .max_args = 1,} 
-        ,
-        { .type = CMD_CAPA, .name = "CAPA", .min_args = 0, .max_args = 0,} 
-        ,
-        { .type = CMD_QUIT, .name = "QUIT", .min_args = 0, .max_args = 0,}
-        ,
-        { .type = CMD_DELE, .name = "DELE", .min_args = 1, .max_args = 1,}
-        ,
-        { .type = CMD_NOOP, .name = "NOOP", .min_args = 0, .max_args = 0,}
-        ,
+        { .type = CMD_USER, .name = "USER", .min_args = 1, .max_args = 1,}, 
+        { .type = CMD_PASS, .name = "PASS", .min_args = 1, .max_args = 1,},
+        { .type = CMD_RETR, .name = "RETR", .min_args = 1, .max_args = 1,},
+        { .type = CMD_LIST, .name = "LIST", .min_args = 0, .max_args = 1,},
+        { .type = CMD_CAPA, .name = "CAPA", .min_args = 0, .max_args = 0,},
+        { .type = CMD_QUIT, .name = "QUIT", .min_args = 0, .max_args = 0,},
+        { .type = CMD_DELE, .name = "DELE", .min_args = 1, .max_args = 1,},
+        { .type = CMD_NOOP, .name = "NOOP", .min_args = 0, .max_args = 0,},
         { .type = CMD_STAT, .name = "STAT", .min_args = 0, .max_args = 0,}
 };
-
-static void command_recognition (input_parser * parser, char c, bool * finished, command_instance * current_command);
-static void with_arguments_state (input_parser * parser, char c, bool * finished, command_instance * current_command);
-static void no_arguments_state (input_parser * parser, char c, bool * finished, command_instance * current_command);
-static void error_state (input_parser * parser, char c, bool * finished, command_instance * current_command);
-
-static void handle_parsed(command_instance * current_command, input_parser * parser, bool * finished, bool not_match);
-static bool is_multi(command_instance * command, int arg_count);
 
 void parser_init(input_parser * parser) {
     //inicializa el parser - necesario tener struct de parser para poder mantener el estado en distintas llamadas
