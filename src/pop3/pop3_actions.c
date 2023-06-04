@@ -89,13 +89,31 @@ void pop3_action_handler(client_connection_data * client_data, command_state cmd
 
 void pop3_invalid_command_action(client_connection_data * client_data) {
      char * msg = "-ERR invalid command\n";
+     size_t msg_len = strlen(msg);
 
-     // WARNING: asumo que hay suficiente espacio en el buffer para escribir todo el mensaje
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
+     size_t max_write;
+     uint8_t * write_dir = buffer_write_ptr(&client_data->write_buffer,&max_write);
+
+     if(max_write < msg_len) {
+          // TODO: handle buffer doesn't have enough space error
      }
+     memcpy(write_dir, msg, msg_len);
+     buffer_write_adv(&client_data->write_buffer, msg_len);
 }    
+// *********** TODO MODULARIZE ***********
+void pop3_noop(client_connection_data * client_data){
+     char * msg = "+OK\n";
+     size_t msg_len = strlen(msg);
 
+     size_t max_write;
+     uint8_t * write_dir = buffer_write_ptr(&client_data->write_buffer,&max_write);
+
+     if(max_write < msg_len) {
+          // TODO: handle buffer doesn't have enough space error
+     }
+     memcpy(write_dir, msg, msg_len);
+     buffer_write_adv(&client_data->write_buffer, msg_len);
+}
 
 void pop3_stat(client_connection_data * client_data){
      char * msg = "STAT\n";
@@ -145,13 +163,6 @@ void pop3_retr(client_connection_data * client_data){
 }
 void pop3_dele(client_connection_data * client_data){
      char * msg = "DELE\n";
-
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
-     }
-}
-void pop3_noop(client_connection_data * client_data){
-     char * msg = "NOOP\n";
 
      for(int i=0; msg[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, msg[i]);
