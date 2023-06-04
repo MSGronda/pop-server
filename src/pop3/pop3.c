@@ -2,7 +2,6 @@
 
 // = = = = = MACROS Y CONSTANTES = = = = = 
 
-#define BUFFER_SIZE 4096
 
 // = = = = = MAQUINA DE ESTADOS DE E\S = = = = = 
 
@@ -21,6 +20,22 @@ static const struct state_definition client_state_actions[] = {
 
 // EXP: Contiene el primer nodo en la lista de conexiones 
 static client_connection_data * connection_pool = NULL; 
+
+client_connection_data * find_previous_connection(client_connection_data * client_data) {
+    if(connection_pool == NULL) {
+        return NULL;
+    }
+    if(connection_pool == client_data){
+        return client_data;
+    }
+
+    client_connection_data * node = connection_pool;
+    while(node->next != client_data) {                    // EXP: comparamos las direcciones de memoria directamente
+        node = node->next;
+    }
+
+    return node;
+}
 
 client_connection_data * find_last_connection() {
     if(connection_pool == NULL) {
@@ -56,32 +71,21 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     new_connection->client_fd = client_fd;
     new_connection->client_address = client_address;
 
-
     // = = = = = INICIALIZO BUFFERS = = = = = 
 
-    uint8_t * read_buffer = malloc(BUFFER_SIZE);
-    uint8_t * write_buffer = malloc(BUFFER_SIZE);
-
-    // supuestamente malloc no deberia retornar NULL nunca pero bueno
-    if(read_buffer == NULL || write_buffer == NULL) {        // TODO: check this
-        return NULL;
-    }
-
-    buffer_init(&new_connection->read_buffer,BUFFER_SIZE, read_buffer);
-    buffer_init(&new_connection->write_buffer,BUFFER_SIZE, write_buffer);
-    
+    buffer_init(&new_connection->read_buffer,BUFFER_SIZE, new_connection->read_addr);
+    buffer_init(&new_connection->write_buffer,BUFFER_SIZE, new_connection->write_addr);
 
     //  = = = = = MENSAJE INICIAL = = = = = 
     // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
-    // TODO: CHECK!!!!
-
     char * hello_msg = "+OK pop3-server ready\n";
+    size_t hello_len = strlen(hello_msg);
 
     // WARNING: asumo que hay suficiente espacio en el buffer para escribir todo el mensaje
-    for(int i=0; hello_msg[i]!=0; i++){
-        buffer_write(&new_connection->write_buffer, hello_msg[i]);
-    }
-
+    size_t max_size;
+    uint8_t * p = buffer_write_ptr(&new_connection->write_buffer, &max_size);
+    memcpy(p, hello_msg, hello_len);
+    buffer_write_adv(&new_connection->write_buffer, strlen(hello_msg));
 
     // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
@@ -119,7 +123,20 @@ void pop3_block_handler(struct selector_key *key) {
 }
 
 void pop3_close_handler(struct selector_key *key) {     // TODO: liberar recursos en este llamado.
-    printf("CLOSE");
+    client_connection_data * client_data = ATTACHMENT(key);
+
+    client_connection_data * previous = find_previous_connection(client_data);
+
+    if(previous == NULL || previous == client_data){
+        connection_pool = NULL;
+    }
+    else{
+        previous->next = client_data->next;
+    }
+
+    free(client_data);
+
+    printf("Closed connection with client\n");     // TODO: REMOVE
 }
 
 
@@ -133,7 +150,7 @@ static const struct fd_handler pop3_handlers ={
 
 void pop3_passive_handler(struct selector_key *key) {
     char * error_msg;
-    printf("A connection has been recieved\n");
+    printf("A connection has been recieved\n");     // TODO: REMOVE
 
     struct sockaddr_storage client_address;
     socklen_t client_address_len = sizeof(client_address);
@@ -160,7 +177,7 @@ void pop3_passive_handler(struct selector_key *key) {
     }
 
     // EXP: configuro todos los handlers para los distintos casos: read, write, close, block
-    // EXP: lo registramos con el read dado que queremos que se "active" cuando el cliente manda algo
+    // EXP: lo registramos como OP_WRITE ya que queremos primero mandar el "+OK server ready" antes de recibir comandos
     if(selector_register(key->s, client_fd, &pop3_handlers, OP_WRITE, new_client) != SELECTOR_SUCCESS) {
         ERROR_CATCH("Error registering client socket to select", finally)
     }

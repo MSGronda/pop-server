@@ -20,8 +20,8 @@ unsigned int socket_read(struct selector_key *key) {
 
     // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
     // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
-    bool finished;
-    size_t consumed;
+    bool finished = 0;          // TODO: check esto porque si o si hay que inicializarlo en 0
+    size_t consumed = 0;
     command_state cmd_state = parser_consume(&client_data->command_parser, &client_data->read_buffer, &finished, &consumed);
 
     // EXP: el comando esta incompleto, debemos "esperar" hasta que llegue mas informacion
@@ -37,7 +37,6 @@ unsigned int socket_read(struct selector_key *key) {
 
 unsigned int socket_write(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
-
 
     // EXP: llamaron al read action sin nada en el buffer de salida, PANICO
     if(!buffer_can_read(&client_data->write_buffer)) {

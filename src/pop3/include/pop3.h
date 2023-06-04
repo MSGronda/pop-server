@@ -10,7 +10,10 @@ typedef struct client_connection_data client_connection_data;
 #include "../../parser/include/parser.h"
 #include "./socket_io_actions.h"
 #include <stdlib.h>
+#include <string.h>
 
+
+#define BUFFER_SIZE 4096
 
 // = = = = = MAQUINA DE ESTADOS = = = = = 
 
@@ -38,6 +41,9 @@ typedef struct client_connection_data{
     buffer read_buffer;                       
     buffer write_buffer;
 
+    uint8_t read_addr[BUFFER_SIZE];
+    uint8_t write_addr[BUFFER_SIZE];
+    
     struct state_machine stm;                   // maquina de entrada y salida del cliente
 
     pop3_state state;                           // estado del cliente de pop3: AUTHENTICATION, TRANSACTION, UPDATE
