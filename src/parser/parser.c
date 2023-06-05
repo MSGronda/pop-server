@@ -191,6 +191,7 @@ static void with_arguments_state (input_parser * parser, const char c, bool * fi
     } else {
         parser->correctly_formed = 0;
         parser->state = COMMAND_ERROR_STATE;
+        handle_parsed(current_command, parser, finished, true);
     }
 }
 
