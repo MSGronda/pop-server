@@ -159,7 +159,6 @@ void pop3_close_handler(struct selector_key *key) {
     else {
         previous->next = client_data->next;
     }
-
     free(client_data);
 }
 

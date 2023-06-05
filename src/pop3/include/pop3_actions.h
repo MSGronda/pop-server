@@ -1,7 +1,7 @@
 #ifndef POP3_ACTIONS_H
 #define POP3_ACTIONS_H
 
-
+#include "users.h"
 #include "./pop3.h"
 #include "../../parser/include/parser.h"
 #include <string.h>

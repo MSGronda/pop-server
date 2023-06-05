@@ -38,6 +38,7 @@ static const pop3_action_type auth_ini_actions[] = {
      {.type = CMD_STAT, .handle = &pop3_stat},
 };
 static const pop3_action_type auth_password_actions[] = {
+     {.type = CMD_USER, .handle = &pop3_user},
      {.type = CMD_PASS, .handle = &pop3_pass},
      {.type = CMD_QUIT, .handle = &pop3_quit},
 };
@@ -124,18 +125,39 @@ void pop3_stat(client_connection_data * client_data){
 }
 
 void pop3_user(client_connection_data * client_data){
-     char * msg = "USER\n";
+     int index = find_user(client_data->command_parser.current_command.argument);
 
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
+     char * answer = "+OK\n";
+     for(int i=0; answer[i]!=0; i++) {
+          buffer_write(&client_data->write_buffer, answer[i]);
+     }
+
+     if( index != -1) {
+          client_data->state = AUTH_PASSWORD;
+          client_data->username = malloc(client_data->command_parser.arg_length + 1);
+          strcpy(client_data->username, client_data->command_parser.current_command.argument);
+          printf("%s\n", client_data->username);
      }
 }
 
 void pop3_pass(client_connection_data * client_data){
-     char * msg = "PASS\n";
+     printf("%s\n", client_data->command_parser.current_command.argument);
+     if (client_data->state == AUTH_PASSWORD) {
+          user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
+          if (!status) {
+               char * answer = "+OK\n";
+               for(int i=0; answer[i]!=0; i++) {
+                    buffer_write(&client_data->write_buffer, answer[i]);
+               }
+               client_data->state = TRANSACTION;
+               return;
+          }
+          
+     }
+     char * answer = "-ERR\n";
+     for(int i=0; answer[i]!=0; i++) {
+          buffer_write(&client_data->write_buffer, answer[i]);
      }
 }
 

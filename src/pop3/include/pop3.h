@@ -54,6 +54,8 @@ typedef struct client_connection_data{
 
     int active;
 
+    char * username;                            // client username
+
     client_connection_data * next;              // proximo cliente en la lista de clientes
 }client_connection_data;
 
