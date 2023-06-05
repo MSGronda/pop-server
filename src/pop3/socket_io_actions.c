@@ -15,6 +15,13 @@ unsigned int socket_read(struct selector_key *key) {
     // EXP: leo de forma no bloqueante
     ssize_t recieved_count = recv(key->fd, buffer, read_max, 0);                        // TODO: check read_count <= 0 (?)
 
+    if(recieved_count == -1) {
+        return SOCKET_ERROR;
+    }
+    if(recieved_count == 0) {
+        return SOCKET_DONE;
+    }
+
     // EXP: avanzo el puntero de escritura en la libreria de buffers
     buffer_write_adv(&client_data->read_buffer, recieved_count);
 
@@ -59,4 +66,14 @@ unsigned int socket_write(struct selector_key *key) {
     } 
     // EXP: no se mando todo, quiero que intente devuelta
     return SOCKET_IO_WRITE;             
+}
+
+void socket_done(const unsigned state, struct selector_key *key) {
+    client_connection_data * client_data = ATTACHMENT(key);
+    printf("Client (fd: %d) has finished connection successfully.\n", client_data->client_fd);
+}
+
+void socket_error(const unsigned state, struct selector_key *key) {
+    client_connection_data * client_data = ATTACHMENT(key);
+    printf("Client (fd: %d) has finished connection with error.\n", client_data->client_fd);
 }

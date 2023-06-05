@@ -1,7 +1,10 @@
 #include "./include/pop3.h"
 
-// = = = = = MACROS Y CONSTANTES = = = = = 
-
+// = = = = = FUNCTIONS = = = = = 
+void pop3_close_handler(struct selector_key *key);
+void pop3_block_handler(struct selector_key *key);
+void pop3_read_handler(struct selector_key *key);
+void pop3_write_handler(struct selector_key *key);
 
 // = = = = = MAQUINA DE ESTADOS DE E\S = = = = = 
 
@@ -13,6 +16,14 @@ static const struct state_definition client_state_actions[] = {
     {
         .state = SOCKET_IO_READ,
         .on_read_ready = &socket_read,
+    },
+    {
+        .state = SOCKET_DONE,
+        .on_arrival = &socket_done,
+    },
+    {
+        .state = SOCKET_ERROR,
+        .on_arrival = &socket_error,
     },
 };
 
@@ -90,12 +101,13 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
     new_connection->state = AUTH_INI;
+    new_connection->active = 1;
 
     // = = = = = INICIALIZO MAQUINA DE ESTADOS DE E/S = = = = = 
 
     // Seteo de la maquina de estados
     new_connection->stm.initial = SOCKET_IO_WRITE;
-    new_connection->stm.max_state = SOCKET_IO_READ;
+    new_connection->stm.max_state = SOCKET_ERROR;
     new_connection->stm.states = client_state_actions;
 
     // Inicialización de la máquina de estados
@@ -112,31 +124,43 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 
 void pop3_read_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
-    unsigned int io_state = stm_handler_read(stm, key);                             // TODO: return value (?)
+    unsigned int io_state = stm_handler_read(stm, key);
+    if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
+        pop3_close_handler(key);
+    }
 }
 void pop3_write_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
-    unsigned int io_state = stm_handler_write(stm, key);
+    unsigned int io_state = stm_handler_write(stm, key);            //TODO: return value (?)
 }
 void pop3_block_handler(struct selector_key *key) {
     printf("BLOCK");                                        // TODO: make 
 }
 
-void pop3_close_handler(struct selector_key *key) {     // TODO: liberar recursos en este llamado.
+void pop3_close_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
 
+    if(!client_data->active){
+        return;
+    }
+    client_data->active = 0;
+
+    if(client_data->client_fd != -1) {
+        selector_unregister_fd(key->s, client_data->client_fd);
+        close(client_data->client_fd);
+    }
+
+    // EXP: elimino de la lista y libero recursos
     client_connection_data * previous = find_previous_connection(client_data);
 
-    if(previous == NULL || previous == client_data){
+    if(previous == NULL || previous == client_data) {
         connection_pool = NULL;
     }
-    else{
+    else {
         previous->next = client_data->next;
     }
 
     free(client_data);
-
-    printf("Closed connection with client\n");     // TODO: REMOVE
 }
 
 

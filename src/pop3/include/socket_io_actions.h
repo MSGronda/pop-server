@@ -8,5 +8,7 @@
 
 unsigned int socket_read(struct selector_key *key);
 unsigned int socket_write(struct selector_key *key);
+void socket_done(const unsigned state, struct selector_key *key);
+void socket_error(const unsigned state, struct selector_key *key);
 
 #endif

@@ -13,13 +13,15 @@ typedef struct client_connection_data client_connection_data;
 #include <string.h>
 
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 2048
 
 // = = = = = MAQUINA DE ESTADOS = = = = = 
 
 typedef enum {
     SOCKET_IO_WRITE,
-    SOCKET_IO_READ
+    SOCKET_IO_READ,
+    SOCKET_DONE,
+    SOCKET_ERROR
 }stm_io_state;
 
 
@@ -49,6 +51,8 @@ typedef struct client_connection_data{
     pop3_state state;                           // estado del cliente de pop3: AUTHENTICATION, TRANSACTION, UPDATE
 
     input_parser command_parser;                // parser de comandos pop3
+
+    int active;
 
     client_connection_data * next;              // proximo cliente en la lista de clientes
 }client_connection_data;
