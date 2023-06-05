@@ -77,6 +77,8 @@ int main() {
         ERROR_CATCH("Error registering selector", finally)
     }
 
+    // = = = = = = CARGA DE USUARIOS = = = = = = = = =
+    initialize_users("/home/machi/protos/pop-server/src/pop3/names.txt");
     
     // EXP: loop infinito
     while(1) {
@@ -89,5 +91,6 @@ int main() {
 
 finally:
     fprintf(stderr, "%s\n", error_msg);
+    finish_users();
     return 0;
 }
