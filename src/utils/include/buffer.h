@@ -148,5 +148,7 @@ buffer_can_read(buffer *b);
 bool
 buffer_can_write(buffer *b);
 
+void
+buffer_write_chunk(buffer * b, char * msg, size_t len, unsigned * msg_pos, bool * finished);
 
 #endif

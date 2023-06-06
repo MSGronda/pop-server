@@ -28,8 +28,8 @@ typedef enum {
 // = = = = = ESTADO DE CLIENTE POP3 = = = = = 
 
 typedef enum {
-    AUTH_INI,               // CAPA, USER
-    AUTH_PASSWORD,          // PASS
+    AUTH_INI,               // CAPA, USER, QUIT
+    AUTH_PASSWORD,          // PASS, QUIT
     TRANSACTION,            // LIST, RETR, DELE...
     UPDATE,                 // ---
 }pop3_state;
@@ -45,6 +45,9 @@ typedef struct client_connection_data{
 
     uint8_t read_addr[BUFFER_SIZE];
     uint8_t write_addr[BUFFER_SIZE];
+
+    bool write_finished;                        // si para cierta accion, ya se mando escribio todo el mensaje al buffer de salida
+    unsigned msg_pos;                           // cuanto se pudo mandar del mensaje actual que se quiere mandar          
     
     struct state_machine stm;                   // maquina de entrada y salida del cliente
 
@@ -52,7 +55,7 @@ typedef struct client_connection_data{
 
     input_parser command_parser;                // parser de comandos pop3
 
-    int active;
+    int active;                                 // designa si un socket sigue activo o ha sido cerrado (por error u otra razon)
 
     char * username;                            // client username
 

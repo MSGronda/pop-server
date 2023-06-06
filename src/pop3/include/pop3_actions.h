@@ -7,5 +7,6 @@
 #include <string.h>
 
 void pop3_action_handler(client_connection_data * client_data, command_state cmd_state);
+void pop3_continue_action(client_connection_data * client_data);
 
 #endif

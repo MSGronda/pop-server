@@ -84,8 +84,8 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 
     // = = = = = INICIALIZO BUFFERS = = = = = 
 
-    buffer_init(&new_connection->read_buffer,BUFFER_SIZE, new_connection->read_addr);
-    buffer_init(&new_connection->write_buffer,BUFFER_SIZE, new_connection->write_addr);
+    buffer_init(&new_connection->read_buffer, BUFFER_SIZE, new_connection->read_addr);
+    buffer_init(&new_connection->write_buffer, BUFFER_SIZE, new_connection->write_addr);
 
     //  = = = = = MENSAJE INICIAL = = = = = 
     // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
@@ -97,6 +97,9 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     uint8_t * p = buffer_write_ptr(&new_connection->write_buffer, &max_size);
     memcpy(p, hello_msg, hello_len);
     buffer_write_adv(&new_connection->write_buffer, strlen(hello_msg));
+
+    new_connection->write_finished = 1;
+    new_connection->msg_pos = 0;
 
     // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
@@ -140,6 +143,7 @@ void pop3_block_handler(struct selector_key *key) {
 void pop3_close_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
 
+    // EXP: debemos hacer esto porque selector_unregister_fd llama al close handler cuando termina
     if(!client_data->active){
         return;
     }

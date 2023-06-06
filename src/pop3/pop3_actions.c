@@ -43,6 +43,7 @@ static const pop3_action_type auth_password_actions[] = {
      {.type = CMD_QUIT, .handle = &pop3_quit},
 };
 static const pop3_action_type transaction_actions[] = {
+     {.type = CMD_CAPA, .handle = &pop3_capa},
      {.type = CMD_RETR, .handle = &pop3_retr},
      {.type = CMD_LIST, .handle = &pop3_list},
      {.type = CMD_QUIT, .handle = &pop3_quit},
@@ -50,7 +51,17 @@ static const pop3_action_type transaction_actions[] = {
      {.type = CMD_NOOP, .handle = &pop3_noop},
      {.type = CMD_STAT, .handle = &pop3_stat},
 };
-
+static const pop3_action_type all_actions[] = {
+     {.type = CMD_CAPA, .handle = &pop3_capa},
+     {.type = CMD_USER, .handle = &pop3_user},
+     {.type = CMD_PASS, .handle = &pop3_pass},
+     {.type = CMD_QUIT, .handle = &pop3_quit},
+     {.type = CMD_RETR, .handle = &pop3_retr},
+     {.type = CMD_LIST, .handle = &pop3_list},
+     {.type = CMD_DELE, .handle = &pop3_dele},
+     {.type = CMD_NOOP, .handle = &pop3_noop},
+     {.type = CMD_STAT, .handle = &pop3_stat},
+};
 
 pop3_action find_action(command_type command, const pop3_action_type * actions, size_t size){
      for(size_t i=0; i<size; i++) {
@@ -87,33 +98,26 @@ void pop3_action_handler(client_connection_data * client_data, command_state cmd
      }
 }
 
+void pop3_continue_action(client_connection_data * client_data) {
+
+     // EXP: no se pudo escribir todo el mensaje al buffer de salida
+     // EXP: hay que reejecutar el comando asi puede seguir probando
+
+     find_action(client_data->command_parser.current_command.type, all_actions, sizeof(all_actions)/sizeof(pop3_action_type))(client_data);
+}
 
 void pop3_invalid_command_action(client_connection_data * client_data) {
      char * msg = "-ERR invalid command\n";
-     size_t msg_len = strlen(msg);
+     size_t len = strlen(msg);
 
-     size_t max_write;
-     uint8_t * write_dir = buffer_write_ptr(&client_data->write_buffer,&max_write);
-
-     if(max_write < msg_len) {
-          // TODO: handle buffer doesn't have enough space error
-     }
-     memcpy(write_dir, msg, msg_len);
-     buffer_write_adv(&client_data->write_buffer, msg_len);
+     buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
 }    
 // *********** TODO MODULARIZE ***********
 void pop3_noop(client_connection_data * client_data){
      char * msg = "+OK\n";
-     size_t msg_len = strlen(msg);
+     size_t len = strlen(msg);
 
-     size_t max_write;
-     uint8_t * write_dir = buffer_write_ptr(&client_data->write_buffer,&max_write);
-
-     if(max_write < msg_len) {
-          // TODO: handle buffer doesn't have enough space error
-     }
-     memcpy(write_dir, msg, msg_len);
-     buffer_write_adv(&client_data->write_buffer, msg_len);
+     buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
 }
 
 void pop3_stat(client_connection_data * client_data){

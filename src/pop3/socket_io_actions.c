@@ -59,6 +59,12 @@ unsigned int socket_write(struct selector_key *key) {
 
     buffer_read_adv(&client_data->write_buffer, sent_count);
 
+
+    // TODO: check this.
+    if(!client_data->write_finished){
+        pop3_continue_action(client_data);
+    }
+
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
     if(!buffer_can_read(&client_data->write_buffer)){
         selector_set_interest_key(key, OP_READ);

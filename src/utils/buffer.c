@@ -98,3 +98,26 @@ buffer_compact(buffer *b) {
         b->write = b->data + n;
     }
 }
+
+void
+buffer_write_chunk(buffer * b, char * msg, size_t len, unsigned * msg_pos, bool * finished) {
+    size_t max_write;
+    uint8_t * write_dir = buffer_write_ptr(b,&max_write);
+
+    // EXP: escribo o el maximo que me acepta el buffer (dejando parte del mensaje afuera)
+    // EXP: o escribo todo el mensaje
+    size_t write_amount = len - *msg_pos > max_write ? max_write : len - *msg_pos;
+    
+    memcpy(write_dir, msg + *msg_pos, write_amount);
+    buffer_write_adv(b, write_amount);
+
+    *msg_pos += write_amount;
+
+    if(*msg_pos < len) {
+        *finished = false;
+    }
+    else{
+        *finished = true;
+        *msg_pos = 0;
+    }
+}
