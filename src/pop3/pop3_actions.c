@@ -107,31 +107,30 @@ void pop3_continue_action(client_connection_data * client_data) {
 }
 
 void pop3_invalid_command_action(client_connection_data * client_data) {
-     char * msg = "-ERR invalid command\n";
+     char * msg = "-ERR invalid command\r\n";
      size_t len = strlen(msg);
 
      buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
 }    
 // *********** TODO MODULARIZE ***********
 void pop3_noop(client_connection_data * client_data){
-     char * msg = "+OK\n";
+     char * msg = "+OK\r\n";
      size_t len = strlen(msg);
 
      buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
 }
 
-void pop3_stat(client_connection_data * client_data){
-     char * msg = "STAT\n";
+void pop3_capa(client_connection_data * client_data){
+     char * msg = "+OK\r\nCAPA\r\nPIPELINING\r\nUSER\r\n.\r\n";
+     size_t len = strlen(msg);
 
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
-     }
+     buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
 }
 
 void pop3_user(client_connection_data * client_data){
      int index = find_user(client_data->command_parser.current_command.argument);
 
-     char * answer = "+OK\n";
+     char * answer = "+OK\r\n";
      for(int i=0; answer[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, answer[i]);
      }
@@ -150,7 +149,7 @@ void pop3_pass(client_connection_data * client_data){
           user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
           if (!status) {
-               char * answer = "+OK\n";
+               char * answer = "+OK\r\n";
                for(int i=0; answer[i]!=0; i++) {
                     buffer_write(&client_data->write_buffer, answer[i]);
                }
@@ -159,20 +158,18 @@ void pop3_pass(client_connection_data * client_data){
           }
           
      }
-     char * answer = "-ERR\n";
+     char * answer = "-ERR\r\n";
      for(int i=0; answer[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, answer[i]);
      }
 }
-
-void pop3_capa(client_connection_data * client_data){
-     char * msg = "CAPA\n";
+void pop3_stat(client_connection_data * client_data){
+     char * msg = "STAT\n";
 
      for(int i=0; msg[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, msg[i]);
      }
 }
-
 void pop3_quit(client_connection_data * client_data){
      char * msg = "QUIT\n";
 
