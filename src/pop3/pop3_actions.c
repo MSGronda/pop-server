@@ -11,6 +11,7 @@ void pop3_retr(client_connection_data * client_data);
 void pop3_dele(client_connection_data * client_data);
 void pop3_noop(client_connection_data * client_data);
 void pop3_list(client_connection_data * client_data);
+static void send_back_to_ini(client_connection_data * client_data);
 
 
 // EXP: puntero a funcion que ejecuta la accion
@@ -41,6 +42,7 @@ static const pop3_action_type auth_password_actions[] = {
      {.type = CMD_USER, .handle = &pop3_user},
      {.type = CMD_PASS, .handle = &pop3_pass},
      {.type = CMD_QUIT, .handle = &pop3_quit},
+     {.type = CMD_CAPA, .handle = &pop3_capa},
 };
 static const pop3_action_type transaction_actions[] = {
      {.type = CMD_CAPA, .handle = &pop3_capa},
@@ -110,6 +112,7 @@ void pop3_invalid_command_action(client_connection_data * client_data) {
      char * msg = "-ERR invalid command\r\n";
      size_t len = strlen(msg);
 
+     send_back_to_ini(client_data);
      buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
 }    
 // *********** TODO MODULARIZE ***********
@@ -123,6 +126,7 @@ void pop3_noop(client_connection_data * client_data){
 void pop3_capa(client_connection_data * client_data){
      char * msg = "+OK\r\nCAPA\r\nPIPELINING\r\nUSER\r\n.\r\n";
      size_t len = strlen(msg);
+     send_back_to_ini(client_data);
 
      buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
 }
@@ -158,6 +162,7 @@ void pop3_pass(client_connection_data * client_data){
           }
           
      }
+     send_back_to_ini(client_data);
      char * answer = "-ERR\r\n";
      for(int i=0; answer[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, answer[i]);
@@ -196,5 +201,13 @@ void pop3_list(client_connection_data * client_data){
 
      for(int i=0; msg[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, msg[i]);
+     }
+}
+
+static void send_back_to_ini(client_connection_data * client_data) {
+     if (client_data->state == AUTH_PASSWORD) {
+          free(client_data->username);
+          client_data->username = NULL;
+          client_data->state = AUTH_INI;
      }
 }
