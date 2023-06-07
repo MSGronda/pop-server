@@ -42,12 +42,11 @@ user_status login_user(const char * username, const char * password) {
     if (user_index < 0)
         return USER_ERROR;
     int pass = strcmp(users[user_index].pass, password);
-    if(pass != 0 || users[user_index].session_active == 1)
+    if(pass != 0 )
         return USER_ERROR;
 
-    users[user_index].session_active = 1;
     return USER_OK;
-}   
+}
 
 
 int finish_users() {
