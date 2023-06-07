@@ -2,29 +2,8 @@
 
 // = = = = = SOCKET I/O = = = = = 
 
-unsigned int socket_read(struct selector_key *key) {
+unsigned int socket_command_handle(struct selector_key *key){
     client_connection_data * client_data = ATTACHMENT(key);
-
-    size_t read_max;   
-    uint8_t * buffer;
-
-    // EXP: le pido a libreria de buffer, un puntero a una zona de memoria
-    // EXP: me devuelve ese puntero y la cantidad de de bytes que puede leer
-    buffer = buffer_write_ptr(&client_data->read_buffer, &read_max);
-
-    // EXP: leo de forma no bloqueante
-    ssize_t recieved_count = recv(key->fd, buffer, read_max, 0);
-
-    if(recieved_count == -1) {
-        return SOCKET_ERROR;
-    }
-    if(recieved_count == 0) {
-        return SOCKET_DONE;
-    }
-
-    // EXP: avanzo el puntero de escritura en la libreria de buffers
-    buffer_write_adv(&client_data->read_buffer, recieved_count);
-
     // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
     // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
     bool finished = 0;          // TODO: check esto porque si o si hay que inicializarlo en 0
@@ -42,15 +21,35 @@ unsigned int socket_read(struct selector_key *key) {
     return SOCKET_IO_WRITE;
 }
 
+unsigned int socket_read(struct selector_key *key) {
+    client_connection_data * client_data = ATTACHMENT(key);
+
+    size_t read_max;   
+    uint8_t * buffer;
+    
+    // EXP: le pido a libreria de buffer, un puntero a una zona de memoria
+    // EXP: me devuelve ese puntero y la cantidad de de bytes que puede leer
+    buffer = buffer_write_ptr(&client_data->read_buffer, &read_max);
+
+    // EXP: leo de forma no bloqueante
+    ssize_t recieved_count = recv(key->fd, buffer, read_max, 0);
+
+    if(recieved_count == -1) {
+        return SOCKET_ERROR;
+    }
+    if(recieved_count == 0) {
+        return SOCKET_DONE;
+    }
+
+    // EXP: avanzo el puntero de escritura en la libreria de buffers
+    buffer_write_adv(&client_data->read_buffer, recieved_count);
+
+    return socket_command_handle(key);
+}
+
 unsigned int socket_write(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
 
-    // EXP: llamaron al read action sin nada en el buffer de salida, PANICO
-    if(!buffer_can_read(&client_data->write_buffer)) {
-        // TODO: estado de error (?)
-
-        return SOCKET_IO_READ;
-    }
     // EXP: consigo lo que puedo escribir y lo intento mandar
     // EXP: solo avanzo (en el buffer) la cantidad que realmente pude mandar
     size_t write_max;
@@ -58,6 +57,12 @@ unsigned int socket_write(struct selector_key *key) {
     ssize_t sent_count = send(key->fd, buffer, write_max, 0);
 
     buffer_read_adv(&client_data->write_buffer, sent_count);
+
+    // EXP: todavia hay comandos en el buffer de lectura (por pipelining)
+    // EXP: hay que consumir y ejecutar
+    if(buffer_can_read(&client_data->read_buffer)){
+        return socket_command_handle(key);
+    }
 
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
     if(!buffer_can_read(&client_data->write_buffer)){

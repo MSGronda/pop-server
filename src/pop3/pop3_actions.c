@@ -53,17 +53,6 @@ static const pop3_action_type transaction_actions[] = {
      {.type = CMD_NOOP, .handle = &pop3_noop},
      {.type = CMD_STAT, .handle = &pop3_stat},
 };
-static const pop3_action_type all_actions[] = {
-     {.type = CMD_CAPA, .handle = &pop3_capa},
-     {.type = CMD_USER, .handle = &pop3_user},
-     {.type = CMD_PASS, .handle = &pop3_pass},
-     {.type = CMD_QUIT, .handle = &pop3_quit},
-     {.type = CMD_RETR, .handle = &pop3_retr},
-     {.type = CMD_LIST, .handle = &pop3_list},
-     {.type = CMD_DELE, .handle = &pop3_dele},
-     {.type = CMD_NOOP, .handle = &pop3_noop},
-     {.type = CMD_STAT, .handle = &pop3_stat},
-};
 
 pop3_action find_action(command_type command, const pop3_action_type * actions, size_t size){
      for(size_t i=0; i<size; i++) {
