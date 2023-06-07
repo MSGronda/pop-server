@@ -8,6 +8,7 @@
 typedef struct {
     char *name;
     char *pass;
+    int session_active;
 }users_data;
 
 struct pop3_server_state {
