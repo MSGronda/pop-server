@@ -3,10 +3,12 @@
 #define MAX_PENDING_CONNECTIONS 600
 #define SELECTOR_SIZE 1024
 
-int main() {
+extern struct pop3_server_state pop3_server_state;
+
+int main(int argc, char * argv[]) {
     char * error_msg;
 
-
+    parse_args(argc, argv, &pop3_server_state );
     // = = = = = CONFIGURACION DEL SOCKET = = = = = =
     
     // EXP: usamos IPv6 directamente porque puede aceptar conexiones 
@@ -26,7 +28,9 @@ int main() {
 
     // EXP: seteo la informacion del socket
     address.sin6_family = AF_INET6;
-    address.sin6_port = htons(25565);
+    address.sin6_port = htons(pop3_server_state.port);
+
+    // address.sin6_port = htons(25565);
     address.sin6_addr = in6addr_any;       // any address TODO: check
 
     // EXP: bindeo el socket
@@ -78,7 +82,8 @@ int main() {
     }
 
     // = = = = = = CARGA DE USUARIOS = = = = = = = = =
-    initialize_users("/home/machi/protos/pop-server/src/pop3/names.txt");
+    // initialize_users("/home/machi/protos/pop-server/src/pop3/names.txt");
+    load_users(pop3_server_state.users, pop3_server_state.amount_users);
     
     // EXP: loop infinito
     while(1) {

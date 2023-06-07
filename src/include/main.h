@@ -6,6 +6,7 @@
 #include "../pop3/include/pop3.h"
 #include "../pop3/include/users.h"
 #include "common.h"
+#include "args.h"
 
 
 #include <stdio.h>
