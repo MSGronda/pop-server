@@ -13,7 +13,7 @@ unsigned int socket_read(struct selector_key *key) {
     buffer = buffer_write_ptr(&client_data->read_buffer, &read_max);
 
     // EXP: leo de forma no bloqueante
-    ssize_t recieved_count = recv(key->fd, buffer, read_max, 0);                        // TODO: check read_count <= 0 (?)
+    ssize_t recieved_count = recv(key->fd, buffer, read_max, 0);
 
     if(recieved_count == -1) {
         return SOCKET_ERROR;
@@ -58,12 +58,6 @@ unsigned int socket_write(struct selector_key *key) {
     ssize_t sent_count = send(key->fd, buffer, write_max, 0);
 
     buffer_read_adv(&client_data->write_buffer, sent_count);
-
-
-    // TODO: check this.
-    if(!client_data->write_finished){
-        pop3_continue_action(client_data);
-    }
 
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
     if(!buffer_can_read(&client_data->write_buffer)){

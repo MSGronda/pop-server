@@ -100,27 +100,22 @@ void pop3_action_handler(client_connection_data * client_data, command_state cmd
      }
 }
 
-void pop3_continue_action(client_connection_data * client_data) {
-
-     // EXP: no se pudo escribir todo el mensaje al buffer de salida
-     // EXP: hay que reejecutar el comando asi puede seguir probando
-
-     find_action(client_data->command_parser.current_command.type, all_actions, sizeof(all_actions)/sizeof(pop3_action_type))(client_data);
-}
-
 void pop3_invalid_command_action(client_connection_data * client_data) {
      char * msg = "-ERR invalid command\r\n";
      size_t len = strlen(msg);
 
      send_back_to_ini(client_data);
-     buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
+
+     // en la mayoria de los casos que se usa buffer_write_n, se asume que hay suficiente espacio
+     // en el buffer para escribir (al ser una longitud constant y pequena)
+
+     buffer_write_n(&client_data->write_buffer, msg, len);           
 }    
-// *********** TODO MODULARIZE ***********
 void pop3_noop(client_connection_data * client_data){
      char * msg = "+OK\r\n";
      size_t len = strlen(msg);
 
-     buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
+     buffer_write_n(&client_data->write_buffer, msg, len);
 }
 
 void pop3_capa(client_connection_data * client_data){
@@ -128,16 +123,15 @@ void pop3_capa(client_connection_data * client_data){
      size_t len = strlen(msg);
      send_back_to_ini(client_data);
 
-     buffer_write_chunk(&client_data->write_buffer, msg, len, &client_data->msg_pos, &client_data->write_finished);
+     buffer_write_n(&client_data->write_buffer, msg, len);
 }
 
 void pop3_user(client_connection_data * client_data){
      int index = find_user(client_data->command_parser.current_command.argument);
 
      char * answer = "+OK\r\n";
-     for(int i=0; answer[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, answer[i]);
-     }
+     size_t len = strlen(answer);
+     buffer_write_n(&client_data->write_buffer, answer, len);
 
      if( index != -1) {
           client_data->state = AUTH_PASSWORD;
@@ -154,9 +148,8 @@ void pop3_pass(client_connection_data * client_data){
 
           if (!status) {
                char * answer = "+OK\r\n";
-               for(int i=0; answer[i]!=0; i++) {
-                    buffer_write(&client_data->write_buffer, answer[i]);
-               }
+               size_t len = strlen(answer);
+               buffer_write_n(&client_data->write_buffer, answer, len);
                client_data->state = TRANSACTION;
                return;
           }
@@ -164,10 +157,10 @@ void pop3_pass(client_connection_data * client_data){
      }
      send_back_to_ini(client_data);
      char * answer = "-ERR\r\n";
-     for(int i=0; answer[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, answer[i]);
-     }
+     size_t len = strlen(answer);
+     buffer_write_n(&client_data->write_buffer, answer, len);
 }
+
 void pop3_stat(client_connection_data * client_data){
      char * msg = "STAT\n";
 

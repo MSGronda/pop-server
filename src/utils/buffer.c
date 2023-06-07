@@ -121,3 +121,16 @@ buffer_write_chunk(buffer * b, char * msg, size_t len, unsigned * msg_pos, bool 
         *msg_pos = 0;
     }
 }
+
+size_t
+buffer_write_n(buffer * b, char * msg, size_t len) {
+    size_t max_len;
+    uint8_t * ptr =  buffer_write_ptr(b, &max_len);
+
+    size_t write_len = max_len > len ? len : max_len;
+
+    memcpy(ptr, msg, write_len);
+    buffer_write_adv(b, write_len);
+
+    return write_len;
+}

@@ -98,9 +98,6 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     memcpy(p, hello_msg, hello_len);
     buffer_write_adv(&new_connection->write_buffer, strlen(hello_msg));
 
-    new_connection->write_finished = 1;
-    new_connection->msg_pos = 0;
-
     // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
     new_connection->state = AUTH_INI;
@@ -128,6 +125,7 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 void pop3_read_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
     unsigned int io_state = stm_handler_read(stm, key);
+
     if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
         pop3_close_handler(key);
     }

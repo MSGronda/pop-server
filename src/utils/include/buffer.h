@@ -151,4 +151,7 @@ buffer_can_write(buffer *b);
 void
 buffer_write_chunk(buffer * b, char * msg, size_t len, unsigned * msg_pos, bool * finished);
 
+size_t
+buffer_write_n(buffer * b, char * msg, size_t len);
+
 #endif

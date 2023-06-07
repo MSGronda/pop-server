@@ -46,9 +46,6 @@ typedef struct client_connection_data{
     uint8_t read_addr[BUFFER_SIZE];
     uint8_t write_addr[BUFFER_SIZE];
 
-    bool write_finished;                        // si para cierta accion, ya se mando escribio todo el mensaje al buffer de salida
-    unsigned msg_pos;                           // cuanto se pudo mandar del mensaje actual que se quiere mandar          
-    
     struct state_machine stm;                   // maquina de entrada y salida del cliente
 
     pop3_state state;                           // estado del cliente de pop3: AUTHENTICATION, TRANSACTION, UPDATE
