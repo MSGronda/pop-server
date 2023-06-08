@@ -12,6 +12,7 @@ unsigned int socket_command_handle(struct selector_key *key){
 
     // EXP: el comando esta incompleto, debemos "esperar" hasta que llegue mas informacion
     if(!finished){
+        selector_set_interest_key(key, OP_READ);
         return SOCKET_IO_READ;
     }
 

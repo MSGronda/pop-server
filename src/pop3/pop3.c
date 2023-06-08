@@ -92,11 +92,7 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     char * hello_msg = "+OK pop3-server ready\n";
     size_t hello_len = strlen(hello_msg);
 
-    // WARNING: asumo que hay suficiente espacio en el buffer para escribir todo el mensaje
-    size_t max_size;
-    uint8_t * p = buffer_write_ptr(&new_connection->write_buffer, &max_size);
-    memcpy(p, hello_msg, hello_len);
-    buffer_write_adv(&new_connection->write_buffer, strlen(hello_msg));
+    buffer_write_n(&new_connection->write_buffer, hello_msg, hello_len);
 
     // = = = = = INICIALIZO DE ESTADO DE POP3 = = = = = 
 
@@ -132,7 +128,11 @@ void pop3_read_handler(struct selector_key *key) {
 }
 void pop3_write_handler(struct selector_key *key) {
     struct state_machine *stm = &ATTACHMENT(key)->stm;
-    unsigned int io_state = stm_handler_write(stm, key);            //TODO: return value (?)
+    unsigned int io_state = stm_handler_write(stm, key);
+
+    if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
+        pop3_close_handler(key);
+    }
 }
 void pop3_block_handler(struct selector_key *key) {
     printf("BLOCK");                                        // TODO: make 
