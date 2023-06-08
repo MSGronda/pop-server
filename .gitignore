@@ -51,5 +51,8 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# POP3
+maildir
+
 # Other
 .vscode

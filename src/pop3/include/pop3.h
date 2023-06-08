@@ -3,6 +3,7 @@
 
 typedef struct client_connection_data client_connection_data;
 
+#include "./mails.h"
 #include "../../utils/include/selector.h"
 #include "../../utils/include/buffer.h"
 #include "../../include/common.h"
@@ -12,7 +13,7 @@ typedef struct client_connection_data client_connection_data;
 #include <stdlib.h>
 #include <string.h>
 
-
+#define MAX_MAILS 100
 #define BUFFER_SIZE 2048
 
 // = = = = = MAQUINA DE ESTADOS = = = = = 
@@ -55,6 +56,10 @@ typedef struct client_connection_data{
     int active;                                 // designa si un socket sigue activo o ha sido cerrado (por error u otra razon)
 
     char * username;                            // client username
+
+    mail_data mails[MAX_MAILS];                 // informacion sobre los mails en la casilla del usuario
+    size_t mail_count;
+    size_t total_octets;
 
     client_connection_data * next;              // proximo cliente en la lista de clientes
 }client_connection_data;

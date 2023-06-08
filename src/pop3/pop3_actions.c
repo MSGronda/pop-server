@@ -136,10 +136,18 @@ void pop3_pass(client_connection_data * client_data){
           user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
           if (!status) {
+               unsigned int resp = initialize_mails(client_data);
+
+               if(resp != MAILS_SUCCESS) {
+                    // TODO: handle error. Quizas cerrar conexion.
+                    printf("ERROR loading mail data\n");
+               }
+
                char * answer = "+OK\r\n";
                size_t len = strlen(answer);
                buffer_write_n(&client_data->write_buffer, answer, len);
                client_data->state = TRANSACTION;
+
                return;
           }
           
@@ -148,6 +156,14 @@ void pop3_pass(client_connection_data * client_data){
      char * answer = "-ERR\r\n";
      size_t len = strlen(answer);
      buffer_write_n(&client_data->write_buffer, answer, len);
+}
+
+void pop3_list(client_connection_data * client_data){
+     list_mails(client_data);
+}
+
+void pop3_retr(client_connection_data * client_data){
+     char * dirname = "";                                   // TODO: que no sea constante esto!!
 }
 
 void pop3_stat(client_connection_data * client_data){
@@ -164,13 +180,6 @@ void pop3_quit(client_connection_data * client_data){
           buffer_write(&client_data->write_buffer, msg[i]);
      }
 }
-void pop3_retr(client_connection_data * client_data){
-     char * msg = "RETR\n";
-
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
-     }
-}
 void pop3_dele(client_connection_data * client_data){
      char * msg = "DELE\n";
 
@@ -178,13 +187,7 @@ void pop3_dele(client_connection_data * client_data){
           buffer_write(&client_data->write_buffer, msg[i]);
      }
 }
-void pop3_list(client_connection_data * client_data){
-     char * msg = "LIST\n";
 
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
-     }
-}
 
 static void send_back_to_ini(client_connection_data * client_data) {
      if (client_data->state == AUTH_PASSWORD) {
