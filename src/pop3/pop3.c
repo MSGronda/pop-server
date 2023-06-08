@@ -6,26 +6,6 @@ void pop3_block_handler(struct selector_key *key);
 void pop3_read_handler(struct selector_key *key);
 void pop3_write_handler(struct selector_key *key);
 
-// = = = = = MAQUINA DE ESTADOS DE E\S = = = = = 
-
-static const struct state_definition client_state_actions[] = {
-    {
-        .state = SOCKET_IO_WRITE,
-        .on_write_ready = &socket_write,
-    },
-    {
-        .state = SOCKET_IO_READ,
-        .on_read_ready = &socket_read,
-    },
-    {
-        .state = SOCKET_DONE,
-        .on_arrival = &socket_done,
-    },
-    {
-        .state = SOCKET_ERROR,
-        .on_arrival = &socket_error,
-    },
-};
 
 // = = = = = SETUP ESTADO DE CLIENTE = = = = = 
 
@@ -99,16 +79,6 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     new_connection->state = AUTH_INI;
     new_connection->active = 1;
 
-    // = = = = = INICIALIZO MAQUINA DE ESTADOS DE E/S = = = = = 
-
-    // Seteo de la maquina de estados
-    new_connection->stm.initial = SOCKET_IO_WRITE;
-    new_connection->stm.max_state = SOCKET_ERROR;
-    new_connection->stm.states = client_state_actions;
-
-    // Inicialización de la máquina de estados
-    stm_init(&new_connection->stm);
-
     // = = = = = INICIALIZO DE PARSER DE COMANDOS = = = = = 
     
     parser_init(&new_connection->command_parser);
@@ -120,23 +90,71 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     return new_connection;
 }
 
+bool pop3_interpret_command(struct selector_key *key){
+    client_connection_data * client_data = ATTACHMENT(key);
+    // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
+    // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
+    bool finished = 0;          // TODO: check esto porque si o si hay que inicializarlo en 0
+    size_t consumed = 0;
+    parser_consume(&client_data->command_parser, &client_data->read_buffer, &finished, &consumed);
+
+    // EXP: el comando esta incompleto, debemos "esperar" hasta que llegue mas informacion
+    return finished;
+}
+
 // = = = = = HANDLERS = = = = = 
 
 void pop3_read_handler(struct selector_key *key) {
-    struct state_machine *stm = &ATTACHMENT(key)->stm;
-    unsigned int io_state = stm_handler_read(stm, key);
+    client_connection_data * client_data = ATTACHMENT(key);
+    printf("reading!!\n");
+
+    // EXP: recibo del cliente
+    unsigned int io_state = socket_read(key);
 
     if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
         pop3_close_handler(key);
     }
+
+    bool complete_command = pop3_interpret_command(key);
+
+    if(complete_command){
+        // EXP: ejecuto el comando y me paso para escribir respuesta
+        pop3_action_handler(client_data, client_data->command_parser.state);
+        selector_set_interest_key(key, OP_WRITE);
+    }   
 }
-void pop3_write_handler(struct selector_key *key) {
-    struct state_machine *stm = &ATTACHMENT(key)->stm;
-    unsigned int io_state = stm_handler_write(stm, key);
 
-    if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
+void pop3_write_handler(struct selector_key *key) {
+    client_connection_data * client_data = ATTACHMENT(key);
+    printf("writing!!\n");
+
+    // EXP: mando al cliente
+    unsigned int io_state = socket_write(key);
+
+    if(io_state == SOCKET_ERROR) {
         pop3_close_handler(key);
     }
+
+    if(!client_data->command.finished){
+        // EXP: sigo ejecutantando el comando 
+        client_data->command.action(client_data);
+    }
+    // EXP: todavia hay comandos en el buffer de lectura (por pipelining)
+    // EXP: hay que consumir y ejecutar
+    else if(buffer_can_read(&client_data->read_buffer)){
+        bool complete_command = pop3_interpret_command(key);
+
+        if(complete_command){
+            pop3_action_handler(client_data, client_data->command_parser.state);
+        }
+        else{
+            selector_set_interest_key(key, OP_READ);
+        }
+    }
+    // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
+    if(!buffer_can_read(&client_data->write_buffer)){
+        selector_set_interest_key(key, OP_READ);
+    } 
 }
 void pop3_block_handler(struct selector_key *key) {
     printf("BLOCK");                                        // TODO: make 
@@ -144,6 +162,7 @@ void pop3_block_handler(struct selector_key *key) {
 
 void pop3_close_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
+    printf("closing!!\n");
 
     // EXP: debemos hacer esto porque selector_unregister_fd llama al close handler cuando termina
     if(!client_data->active){

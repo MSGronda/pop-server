@@ -7,16 +7,10 @@
 #include "./mails.h"
 #include <string.h>
 
-// = = = = = COMMAND ACTUAL = = = = = 
+typedef struct client_connection_data client_connection_data;
 
-// EXP: sirve para aquellos comandos que son multi linea y que quizas 
-// EXP tenga que continuar la ejecucion luego de ser pausada (por falta de buffer)
-
-typedef struct running_command{
-    short finished;
-    size_t bytes_written;
-    command_type command;
-}running_command;
+// EXP: puntero a funcion que ejecuta la accion
+typedef int (*pop3_action)(client_connection_data * );
 
 
 void pop3_action_handler(client_connection_data * client_data, command_state cmd_state);
