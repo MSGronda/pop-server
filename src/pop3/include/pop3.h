@@ -13,7 +13,7 @@ typedef struct client_connection_data client_connection_data;
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_MAILS 100
+
 #define BUFFER_SIZE 2048
 
 // = = = = = MAQUINA DE ESTADOS = = = = = 
@@ -57,9 +57,7 @@ typedef struct client_connection_data{
 
     char * username;                            // client username
 
-    mail_data mails[MAX_MAILS];                 // informacion sobre los mails en la casilla del usuario
-    size_t mail_count;
-    size_t total_octets;
+    user_mail_info mail_info;                   // informacion sobre los mails en la casilla del usuario
 
     client_connection_data * next;              // proximo cliente en la lista de clientes
 }client_connection_data;

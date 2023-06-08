@@ -5,7 +5,7 @@
 
 #define MAX_NAME_SIZE 256
 
-unsigned int initialize_mails(client_connection_data * client_data){
+unsigned int initialize_mails(user_mail_info * mail_info, char * username){
 
     // EXP: generamos un string que tenga como base el directorio del usuario
     size_t dir_base_len = sizeof(DIR_BASE);
@@ -13,7 +13,7 @@ unsigned int initialize_mails(client_connection_data * client_data){
     if(file_name == NULL){
         return ERROR_ALLOC;
     }
-    int user_base_len = sprintf(file_name, "%s/%s/", DIR_BASE, client_data->username);
+    int user_base_len = sprintf(file_name, "%s/%s/", DIR_BASE, username);
 
     // EXP: abrimos el directorio
     DIR * dir = opendir(file_name);
@@ -36,9 +36,9 @@ unsigned int initialize_mails(client_connection_data * client_data){
             if(pos == NULL){
                 return ERROR_ALLOC;
             }
-            client_data->mails[i].name = pos;
+            mail_info->mails[i].name = pos;
 
-            strcpy(client_data->mails[i].name, dir_info->d_name);
+            strcpy(mail_info->mails[i].name, dir_info->d_name);
 
             // EXP: tengo que conseguir los stats del archivo
             strcpy(file_name + user_base_len, dir_info->d_name);
@@ -48,7 +48,7 @@ unsigned int initialize_mails(client_connection_data * client_data){
             if(stat_status == -1){
                 return ERROR_STAT;
             }
-            client_data->mails[i].octets = file_info.st_size;
+            mail_info->mails[i].octets = file_info.st_size;
 
             total_octets += file_info.st_size;
 
@@ -57,28 +57,58 @@ unsigned int initialize_mails(client_connection_data * client_data){
        
         dir_info = readdir(dir);
     }
-    client_data->mail_count = i;
-    client_data->total_octets = total_octets;
+    mail_info->mail_count = i;
+    mail_info->total_octets = total_octets;
 
     closedir(dir);
 
     return MAILS_SUCCESS;
 }
 
-void list_mails(client_connection_data * client_data){
+unsigned long convert_mail_num(char * arg){
+    for(int i=0; arg[i] != 0; i++){
+        if(!isdigit(arg[i])){
+            return LONG_MAX;
+        }
+    }
+    return strtoul(arg, NULL, 10);
+}
+
+void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
+    // EXP: se considera single-line esta respuesta por ende, podemos esribir la respuesta de una
+
+    unsigned long mail_num = convert_mail_num(arg);
+
+    if(mail_num == ULONG_MAX || mail_info->mail_count < mail_num || mail_num == 0){
+        char * msg = "-ERR no such message\r\n";
+        size_t len = strlen(msg);
+
+        buffer_write_n(write_buffer, msg, len);
+        return;
+    }
+
+    size_t max_len;
+    uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
+        
+    int len = sprintf((char *)ptr, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
+
+    buffer_write_adv(write_buffer, len);
+}
+
+void list_mails(buffer * write_buffer, user_mail_info * mail_info){
     size_t bytes_written = 0;
 
     char * initial = "+OK\n";
     size_t len = strlen(initial);
-    buffer_write_n(&client_data->write_buffer, initial, len);         // TODO: change!!
+    buffer_write_n(write_buffer, initial, len);         // TODO: change!!
 
-    for(unsigned i=0; i < client_data->mail_count; i++) {
+    for(unsigned i=0; i < mail_info->mail_count; i++) {
         size_t max_len;
-        uint8_t * ptr = buffer_write_ptr(&client_data->write_buffer, &max_len);
+        uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
         
-        int len = sprintf((char *)ptr, "%d %ld\n", i, client_data->mails[i].octets);
+        int len = sprintf((char *)ptr, "%d %ld\n", i + 1, mail_info->mails[i].octets);
 
-        buffer_write_adv(&client_data->write_buffer, len);
+        buffer_write_adv(write_buffer, len);
 
         bytes_written += len;
     }

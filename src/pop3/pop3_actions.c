@@ -136,7 +136,7 @@ void pop3_pass(client_connection_data * client_data){
           user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
           if (!status) {
-               unsigned int resp = initialize_mails(client_data);
+               unsigned int resp = initialize_mails(&client_data->mail_info, client_data->username);
 
                if(resp != MAILS_SUCCESS) {
                     // TODO: handle error. Quizas cerrar conexion.
@@ -159,7 +159,12 @@ void pop3_pass(client_connection_data * client_data){
 }
 
 void pop3_list(client_connection_data * client_data){
-     list_mails(client_data);
+     if(client_data->command_parser.args_count == 0){
+          list_mails(&client_data->write_buffer, &client_data->mail_info);
+     }
+     else{
+          list_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
+     }
 }
 
 void pop3_retr(client_connection_data * client_data){
