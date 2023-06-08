@@ -113,6 +113,10 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     
     parser_init(&new_connection->command_parser);
 
+    // = = = = = INICIALIZO DE COMANDO ACTUAL = = = = = 
+
+    new_connection->command.finished = 1;
+
     return new_connection;
 }
 

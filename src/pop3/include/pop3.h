@@ -52,6 +52,7 @@ typedef struct client_connection_data{
     pop3_state state;                           // estado del cliente de pop3: AUTHENTICATION, TRANSACTION, UPDATE
 
     input_parser command_parser;                // parser de comandos pop3
+    running_command command;                    // el comando que actualmente se esta corriendo
 
     int active;                                 // designa si un socket sigue activo o ha sido cerrado (por error u otra razon)
 

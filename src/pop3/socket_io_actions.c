@@ -59,14 +59,19 @@ unsigned int socket_write(struct selector_key *key) {
 
     buffer_read_adv(&client_data->write_buffer, sent_count);
 
+
+    if(!client_data->command.finished){
+        pop3_action_continue(client_data);
+    }
+
     // EXP: todavia hay comandos en el buffer de lectura (por pipelining)
     // EXP: hay que consumir y ejecutar
-    if(buffer_can_read(&client_data->read_buffer)){
+    else if(buffer_can_read(&client_data->read_buffer)){
         return socket_command_handle(key);
     }
 
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
-    if(!buffer_can_read(&client_data->write_buffer)){
+    else if(!buffer_can_read(&client_data->write_buffer)){
         selector_set_interest_key(key, OP_READ);
         return SOCKET_IO_READ;
     } 

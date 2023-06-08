@@ -89,8 +89,14 @@ void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
 
     size_t max_len;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
-        
-    int len = sprintf((char *)ptr, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
+
+    int len = snprintf((char *)ptr, max_len, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
+
+    if(len < 0){
+        // TODO: handle error
+
+        return;
+    }
 
     buffer_write_adv(write_buffer, len);
 }
