@@ -6,26 +6,6 @@ void pop3_block_handler(struct selector_key *key);
 void pop3_read_handler(struct selector_key *key);
 void pop3_write_handler(struct selector_key *key);
 
-// = = = = = MAQUINA DE ESTADOS DE E\S = = = = = 
-
-static const struct state_definition client_state_actions[] = {
-    {
-        .state = SOCKET_IO_WRITE,
-        .on_write_ready = &socket_write,
-    },
-    {
-        .state = SOCKET_IO_READ,
-        .on_read_ready = &socket_read,
-    },
-    {
-        .state = SOCKET_DONE,
-        .on_arrival = &socket_done,
-    },
-    {
-        .state = SOCKET_ERROR,
-        .on_arrival = &socket_error,
-    },
-};
 
 // = = = = = SETUP ESTADO DE CLIENTE = = = = = 
 
@@ -89,7 +69,7 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 
     //  = = = = = MENSAJE INICIAL = = = = = 
     // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
-    char * hello_msg = "+OK pop3-server ready\n";
+    char * hello_msg = "+OK pop3-server ready\r\n";
     size_t hello_len = strlen(hello_msg);
 
     buffer_write_n(&new_connection->write_buffer, hello_msg, hello_len);
@@ -99,40 +79,87 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     new_connection->state = AUTH_INI;
     new_connection->active = 1;
 
-    // = = = = = INICIALIZO MAQUINA DE ESTADOS DE E/S = = = = = 
-
-    // Seteo de la maquina de estados
-    new_connection->stm.initial = SOCKET_IO_WRITE;
-    new_connection->stm.max_state = SOCKET_ERROR;
-    new_connection->stm.states = client_state_actions;
-
-    // Inicialización de la máquina de estados
-    stm_init(&new_connection->stm);
-
     // = = = = = INICIALIZO DE PARSER DE COMANDOS = = = = = 
     
     parser_init(&new_connection->command_parser);
 
+    // = = = = = INICIALIZO DE COMANDO ACTUAL = = = = = 
+
+    new_connection->command.finished = 1;
+
     return new_connection;
+}
+
+bool pop3_interpret_command(struct selector_key *key){
+    client_connection_data * client_data = ATTACHMENT(key);
+    // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
+    // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
+    bool finished = 0;          // TODO: check esto porque si o si hay que inicializarlo en 0
+    size_t consumed = 0;
+    parser_consume(&client_data->command_parser, &client_data->read_buffer, &finished, &consumed);
+
+    // EXP: el comando esta incompleto, debemos "esperar" hasta que llegue mas informacion
+    return finished;
 }
 
 // = = = = = HANDLERS = = = = = 
 
 void pop3_read_handler(struct selector_key *key) {
-    struct state_machine *stm = &ATTACHMENT(key)->stm;
-    unsigned int io_state = stm_handler_read(stm, key);
+    client_connection_data * client_data = ATTACHMENT(key);
+
+    // EXP: recibo del cliente
+    unsigned int io_state = socket_read(key);
 
     if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
         pop3_close_handler(key);
+        return;
     }
+
+    bool complete_command = pop3_interpret_command(key);
+
+    if(complete_command){
+        // EXP: ejecuto el comando y me paso para escribir respuesta
+        pop3_action_handler(client_data, client_data->command_parser.state);
+        selector_set_interest_key(key, OP_WRITE);
+    }   
 }
-void pop3_write_handler(struct selector_key *key) {
-    struct state_machine *stm = &ATTACHMENT(key)->stm;
-    unsigned int io_state = stm_handler_write(stm, key);
 
-    if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
+void pop3_write_handler(struct selector_key *key) {
+    client_connection_data * client_data = ATTACHMENT(key);
+
+    // EXP: envio al cliente lo que esta en el buffer de salida
+    unsigned int io_state = socket_write(key);
+
+    if(io_state == SOCKET_ERROR) {
         pop3_close_handler(key);
+        return;
     }
+
+    // EXP: hay 3 casos por los cuales nos queremos mantener en escritura:
+    // 1) no se pudo mandar todo al cliente (la accion es multiline)
+    // 2) todavia hay comandos para leer y ejecutar (por pipelining)
+    // 3) no se le pudo mandar todo al cliente (en cualquier caso: single line, multiline, pipelining, etc)
+
+    // EXP: no termino de ejecutarse el comando (por falta de espacio en el buffer), continuo    
+    if(!client_data->command.finished){
+        client_data->command.action(client_data);
+    }
+    // EXP: todavia hay comandos en el buffer de lectura (por pipelining), hay que consumir y ejecutar
+    else if(buffer_can_read(&client_data->read_buffer)){
+        bool complete_command = pop3_interpret_command(key);
+
+        if(complete_command){
+            pop3_action_handler(client_data, client_data->command_parser.state);
+        }
+        else{
+            // EXP: el comando que lei esta incompleto, espero a que el usuario mande algo
+            selector_set_interest_key(key, OP_READ);
+        }
+    }
+    // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
+    else if(!buffer_can_read(&client_data->write_buffer)){
+        selector_set_interest_key(key, OP_READ);
+    } 
 }
 void pop3_block_handler(struct selector_key *key) {
     printf("BLOCK");                                        // TODO: make 
@@ -155,8 +182,11 @@ void pop3_close_handler(struct selector_key *key) {
     // EXP: elimino de la lista y libero recursos
     client_connection_data * previous = find_previous_connection(client_data);
 
-    if(previous == NULL || previous == client_data) {
+    if(previous == NULL) {
         connection_pool = NULL;
+    }
+    else if (previous == client_data){
+        connection_pool = client_data->next;
     }
     else {
         previous->next = client_data->next;

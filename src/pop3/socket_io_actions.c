@@ -2,26 +2,6 @@
 
 // = = = = = SOCKET I/O = = = = = 
 
-unsigned int socket_command_handle(struct selector_key *key){
-    client_connection_data * client_data = ATTACHMENT(key);
-    // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
-    // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
-    bool finished = 0;          // TODO: check esto porque si o si hay que inicializarlo en 0
-    size_t consumed = 0;
-    command_state cmd_state = parser_consume(&client_data->command_parser, &client_data->read_buffer, &finished, &consumed);
-
-    // EXP: el comando esta incompleto, debemos "esperar" hasta que llegue mas informacion
-    if(!finished){
-        selector_set_interest_key(key, OP_READ);
-        return SOCKET_IO_READ;
-    }
-
-    pop3_action_handler(client_data, cmd_state);
-
-    selector_set_interest_key(key, OP_WRITE);
-    return SOCKET_IO_WRITE;
-}
-
 unsigned int socket_read(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
 
@@ -45,7 +25,7 @@ unsigned int socket_read(struct selector_key *key) {
     // EXP: avanzo el puntero de escritura en la libreria de buffers
     buffer_write_adv(&client_data->read_buffer, recieved_count);
 
-    return socket_command_handle(key);
+    return SOCKET_READ_OK;
 }
 
 unsigned int socket_write(struct selector_key *key) {
@@ -57,29 +37,12 @@ unsigned int socket_write(struct selector_key *key) {
     uint8_t * buffer = buffer_read_ptr(&client_data->write_buffer, &write_max);
     ssize_t sent_count = send(key->fd, buffer, write_max, 0);
 
-    buffer_read_adv(&client_data->write_buffer, sent_count);
-
-    // EXP: todavia hay comandos en el buffer de lectura (por pipelining)
-    // EXP: hay que consumir y ejecutar
-    if(buffer_can_read(&client_data->read_buffer)){
-        return socket_command_handle(key);
+    if(sent_count == -1){
+        return SOCKET_ERROR;
     }
 
-    // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
-    if(!buffer_can_read(&client_data->write_buffer)){
-        selector_set_interest_key(key, OP_READ);
-        return SOCKET_IO_READ;
-    } 
-    // EXP: no se mando todo, quiero que intente devuelta
-    return SOCKET_IO_WRITE;             
+    buffer_read_adv(&client_data->write_buffer, sent_count);
+
+    return SOCKET_WRITE_OK;       
 }
 
-void socket_done(const unsigned state, struct selector_key *key) {
-    client_connection_data * client_data = ATTACHMENT(key);
-    printf("Client (fd: %d) has finished connection successfully.\n", client_data->client_fd);
-}
-
-void socket_error(const unsigned state, struct selector_key *key) {
-    client_connection_data * client_data = ATTACHMENT(key);
-    printf("Client (fd: %d) has finished connection with error.\n", client_data->client_fd);
-}

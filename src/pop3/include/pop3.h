@@ -1,29 +1,42 @@
 #ifndef POP3_H
 #define POP3_H
 
+#include <stdlib.h>
+
 typedef struct client_connection_data client_connection_data;
+typedef int (*pop3_action)(client_connection_data * );
 
 #include "./mails.h"
+#include "./socket_io_actions.h"
+#include "pop3_actions.h"
 #include "../../utils/include/selector.h"
 #include "../../utils/include/buffer.h"
 #include "../../include/common.h"
-#include "../../utils/include/stm.h"
 #include "../../parser/include/parser.h"
-#include "./socket_io_actions.h"
-#include <stdlib.h>
 #include <string.h>
 
 
 #define BUFFER_SIZE 2048
 
+// = = = = = COMMAND ACTUAL = = = = = 
+
+// EXP: sirve para aquellos comandos que son multi linea y que quizas 
+// EXP tenga que continuar la ejecucion luego de ser pausada (por falta de buffer)
+
+typedef struct running_command{
+    bool finished;
+    size_t bytes_written;
+    pop3_action action;
+}running_command;
+
 // = = = = = MAQUINA DE ESTADOS = = = = = 
 
 typedef enum {
-    SOCKET_IO_WRITE,
-    SOCKET_IO_READ,
+    SOCKET_WRITE_OK,
+    SOCKET_READ_OK,
     SOCKET_DONE,
     SOCKET_ERROR
-}stm_io_state;
+}socket_state;
 
 
 // = = = = = ESTADO DE CLIENTE POP3 = = = = = 
@@ -47,11 +60,11 @@ typedef struct client_connection_data{
     uint8_t read_addr[BUFFER_SIZE];
     uint8_t write_addr[BUFFER_SIZE];
 
-    struct state_machine stm;                   // maquina de entrada y salida del cliente
-
     pop3_state state;                           // estado del cliente de pop3: AUTHENTICATION, TRANSACTION, UPDATE
 
     input_parser command_parser;                // parser de comandos pop3
+    
+    running_command command;                    // el comando que actualmente se esta corriendo
 
     int active;                                 // designa si un socket sigue activo o ha sido cerrado (por error u otra razon)
 
