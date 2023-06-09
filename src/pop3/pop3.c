@@ -147,6 +147,12 @@ void pop3_write_handler(struct selector_key *key) {
     // EXP: no termino de ejecutarse el comando (por falta de espacio en el buffer), continuo    
     if(!client_data->command.finished){
         client_data->command.finished = client_data->command.action(client_data);
+
+        // EXP: reseteo comando 
+        if(client_data->command.finished){
+            client_data->command.bytes_written = 0;
+            client_data->command.action = NULL;
+        }
     }
     // EXP: todavia hay comandos en el buffer de lectura (por pipelining), hay que consumir y ejecutar
     else if(buffer_can_read(&client_data->read_buffer)){
