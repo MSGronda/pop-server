@@ -6,7 +6,7 @@
 
 #define MAX_NAME_SIZE 256
 
-static int check_mail(buffer * write_buffer, user_mail_info * mail_info, int mail_num);
+static unsigned long check_mail(buffer * write_buffer, user_mail_info * mail_info, unsigned long mail_num);
 
 unsigned int initialize_mails(user_mail_info * mail_info, char * username){
 
@@ -122,8 +122,6 @@ void list_mails(buffer * write_buffer, user_mail_info * mail_info){
 }
 
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
-
-
     size_t max_len;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
         
@@ -166,7 +164,7 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
 }
 
 
-static int check_mail(buffer * write_buffer, user_mail_info * mail_info, int mail_num) {
+static unsigned long check_mail(buffer * write_buffer, user_mail_info * mail_info, unsigned long mail_num) {
     if(mail_num == ULONG_MAX || mail_info->mail_count < mail_num || mail_num == 0 || mail_info->mails[mail_num - 1].state == 0){
         char * msg = "-ERR no such message\r\n";
         size_t len = strlen(msg);

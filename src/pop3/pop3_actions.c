@@ -1,7 +1,7 @@
 #include "./include/pop3_actions.h"
 
 // EXP: puntero a funcion que ejecuta la accion
-typedef void (*pop3_action)(client_connection_data * );
+typedef int (*pop3_action)(client_connection_data * );
 
 
 typedef struct pop3_action_type{
@@ -21,6 +21,7 @@ int pop3_retr(client_connection_data * client_data);
 int pop3_dele(client_connection_data * client_data);
 int pop3_noop(client_connection_data * client_data);
 int pop3_list(client_connection_data * client_data);
+int pop3_rset(client_connection_data * client_data);
 static void send_back_to_ini(client_connection_data * client_data);
 
 // EXP: contienen los comandos validos para cada estado / subestado
@@ -167,7 +168,7 @@ int pop3_pass(client_connection_data * client_data){
      return true;
 }
 
-int pop3_list(client_connection_data * client_data){
+int pop3_list(client_connection_data * client_data) {
      if(client_data->command_parser.args_count == 0){
           list_mails(&client_data->write_buffer, &client_data->mail_info);
      }
@@ -177,18 +178,18 @@ int pop3_list(client_connection_data * client_data){
      return true;
 }
 
-int pop3_retr(client_connection_data * client_data){
+int pop3_retr(client_connection_data * client_data) {
      char * dirname = "";                                   // TODO: que no sea constante esto!!
      return true;
 }
 
 
-int pop3_stat(client_connection_data * client_data){
+int pop3_stat(client_connection_data * client_data) {
      stat_mailbox(&client_data->write_buffer, &client_data->mail_info);
      return true;
 }
 
-int pop3_quit(client_connection_data * client_data){
+int pop3_quit(client_connection_data * client_data) {
      char * msg = "QUIT\n";
 
      for(int i=0; msg[i]!=0; i++) {
@@ -197,11 +198,12 @@ int pop3_quit(client_connection_data * client_data){
      return true;
 }
 
-void pop3_dele(client_connection_data * client_data){
+int pop3_dele(client_connection_data * client_data) {
      delete_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
      return true;
 }
-void pop3_rset(client_connection_data * client_data) {
+
+int pop3_rset(client_connection_data * client_data) {
      restore_mail(&client_data->write_buffer, &client_data->mail_info);
      return true;
 }
