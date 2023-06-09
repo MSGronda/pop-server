@@ -86,6 +86,8 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     // = = = = = INICIALIZO DE COMANDO ACTUAL = = = = = 
 
     new_connection->command.finished = 1;
+    new_connection->command.bytes_written = 0;
+    new_connection->command.action = NULL;
 
     return new_connection;
 }
@@ -137,12 +139,14 @@ void pop3_write_handler(struct selector_key *key) {
 
     // EXP: hay 3 casos por los cuales nos queremos mantener en escritura:
     // 1) no se pudo mandar todo al cliente (la accion es multiline)
-    // 2) todavia hay comandos para leer y ejecutar (por pipelining)
+    // 2) todavia hay comandos para le`er y ejecutar (por pipelining)
     // 3) no se le pudo mandar todo al cliente (en cualquier caso: single line, multiline, pipelining, etc)
+
+    // EXP: usamos else if para obligar que primero mande la respuesta al usaurio siempre antes de continuar
 
     // EXP: no termino de ejecutarse el comando (por falta de espacio en el buffer), continuo    
     if(!client_data->command.finished){
-        client_data->command.action(client_data);
+        client_data->command.finished = client_data->command.action(client_data);
     }
     // EXP: todavia hay comandos en el buffer de lectura (por pipelining), hay que consumir y ejecutar
     else if(buffer_can_read(&client_data->read_buffer)){

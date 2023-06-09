@@ -16,7 +16,7 @@ typedef int (*pop3_action)(client_connection_data * );
 #include <string.h>
 
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 400
 
 // = = = = = COMMAND ACTUAL = = = = = 
 

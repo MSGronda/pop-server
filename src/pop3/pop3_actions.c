@@ -84,10 +84,14 @@ void pop3_action_handler(client_connection_data * client_data, command_state cmd
    
      // EXP: guardamos la accion por si es multilinea y no se puede ejecutar de una.
      // EXP: cada accion tiene que manejar el valor de finished y continuar con ejecucion si es relevante. 
-     client_data->command.finished = false;
      client_data->command.action = action;
-     
      client_data->command.finished =  action(client_data);
+
+     // EXP: reseteo comando 
+     if(client_data->command.finished){
+          client_data->command.bytes_written = 0;
+          client_data->command.action = NULL;
+     }
 }
 
 int pop3_invalid_command_action(client_connection_data * client_data) {
@@ -98,7 +102,6 @@ int pop3_invalid_command_action(client_connection_data * client_data) {
 
      // en la mayoria de los casos que se usa buffer_write_n, se asume que hay suficiente espacio
      // en el buffer para escribir (al ser una longitud constant y pequena)
-
 
      buffer_write_n(&client_data->write_buffer, msg, len);
      return true;      
@@ -166,12 +169,11 @@ int pop3_pass(client_connection_data * client_data){
 
 int pop3_list(client_connection_data * client_data) {
      if(client_data->command_parser.args_count == 0){
-          list_mails(&client_data->write_buffer, &client_data->mail_info);
+          return list_mails(&client_data->write_buffer, &client_data->mail_info, &client_data->command);
      }
      else{
-          list_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
+          return list_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
      }
-     return true;
 }
 
 int pop3_retr(client_connection_data * client_data) {

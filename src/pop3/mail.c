@@ -80,7 +80,7 @@ unsigned long convert_mail_num(char * arg){
     return strtoul(arg, NULL, 10);
 }
 
-void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
+int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
     // EXP: se considera single-line esta respuesta por ende, podemos esribir la respuesta de una
 
     unsigned long mail_num = convert_mail_num(arg);
@@ -93,30 +93,72 @@ void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
 
         buffer_write_adv(write_buffer, len);
     }
+    return true;
 }
 
-void list_mails(buffer * write_buffer, user_mail_info * mail_info){
-    size_t bytes_written = 0;
+unsigned int num_string_size(size_t num){
+    if(num == 0){
+        return 1;
+    }
+    size_t n = num;
+    unsigned i=0;
+    while(n != 0){
+        i++;
+        n /= 10;
+    }
+    return i;
+}
+#define LIST_LINE_LEN(i, octets) (num_string_size(i) + num_string_size(octets) + 3)
+#define FIRST_LINE_LIST_LEN(count, octets)  (num_string_size(count) + num_string_size(octets) + 25)
 
-    size_t max_len;
-    uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
-        
-    int length = snprintf((char *)response,  max_len,"+OK %ld messages (%ld octets)\n", mail_info->current_count,  mail_info->total_octets); // TODO: change!!
+bool can_write_list_line(unsigned int i, size_t octets, size_t max_len){
+    // EXP: el 3 es el espacio, el \r y el \n
+    return LIST_LINE_LEN(i, octets) + 3 < max_len;
+}
 
-    buffer_write_adv(write_buffer, length);    
+int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_command * command){
+    // EXP: chequeamos si podemos escribir una linea entera del comando list. EJ: 3 430
+    // EXP: nos manejamos por lineas enteras para facilitar la logica.
 
-    for(unsigned i=0; i < mail_info->mail_count; i++) {
+    // EXP: la primera linea la suponemos single line (de la misma forma que en los otros comandos), al llegar el cliente con write_buffer vacio
+    if(command->bytes_written == 0){
+        size_t max_len;
+        uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
+        int length = snprintf((char *)response,  max_len,"+OK %ld messages (%ld octets)\r\n", mail_info->current_count,  mail_info->total_octets);
+        buffer_write_adv(write_buffer, length);  
+        command->bytes_written += length;
+    }
+
+
+    // EXP: voy hasta donde llegue anteriormente
+    unsigned int i=0;
+    size_t previous_sent = FIRST_LINE_LIST_LEN(mail_info->current_count, mail_info->total_octets);      // EXP: empezandos contando despues de la primera linea 
+    while(previous_sent < command->bytes_written  && i < mail_info->mail_count) {
+        if(mail_info->mails[i].state != 0){
+            previous_sent += LIST_LINE_LEN(i, mail_info->mails[i].octets);
+        }
+        i++;
+    }
+
+    // EXP: itero por los mails NO ELIMINADOS y escribo al buffer
+    for(; i < mail_info->mail_count; i++) {
         if(mail_info->mails[i].state != 0){
             size_t max_len;
             uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
-        
+
+            // EXP: me quede sin espacio, marco como si no termine    
+            if(!can_write_list_line(i,mail_info->mails[i].octets, max_len)){
+                return false;
+            }
+
             int len = snprintf((char *)ptr, max_len, "%d %ld\r\n", i + 1, mail_info->mails[i].octets);
 
             buffer_write_adv(write_buffer, len);
 
-            bytes_written += len;
+            command->bytes_written += len;
         }
     }
+    return true;
 }
 
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
