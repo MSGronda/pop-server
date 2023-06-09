@@ -182,8 +182,11 @@ void pop3_close_handler(struct selector_key *key) {
     // EXP: elimino de la lista y libero recursos
     client_connection_data * previous = find_previous_connection(client_data);
 
-    if(previous == NULL || previous == client_data) {
+    if(previous == NULL) {
         connection_pool = NULL;
+    }
+    else if (previous == client_data){
+        connection_pool = client_data->next;
     }
     else {
         previous->next = client_data->next;
