@@ -23,11 +23,13 @@
 typedef struct mail_data{
     char * name;
     size_t octets;
+    int state;
 }mail_data;
 
 typedef struct user_mail_info{
     mail_data mails[MAX_MAILS];  
     size_t mail_count;
+    size_t current_count;
     size_t total_octets;                // tamano total de todos los mails
 }user_mail_info;
 
@@ -37,6 +39,6 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username);
 void list_mails(buffer * write_buffer, user_mail_info * mail_info);
 void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * mail_num);
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info);
-
+void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg);
 
 #endif

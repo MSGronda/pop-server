@@ -1,10 +1,12 @@
 #include "./include/mails.h"
 
 // TODO: change to pop3_server settings
-#define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir/"
-//#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
+//#define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir/"
+#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
 
 #define MAX_NAME_SIZE 256
+
+static int check_mail(buffer * write_buffer, user_mail_info * mail_info, int mail_num);
 
 unsigned int initialize_mails(user_mail_info * mail_info, char * username){
 
@@ -53,6 +55,7 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username){
                 return ERROR_STAT;
             }
             mail_info->mails[i].octets = file_info.st_size;
+            mail_info->mails[i].state = 1;
 
             total_octets += file_info.st_size;
 
@@ -62,6 +65,7 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username){
         dir_info = readdir(dir);
     }
     mail_info->mail_count = i;
+    mail_info->current_count = i;
     mail_info->total_octets = total_octets;
 
     closedir(dir);
@@ -83,20 +87,14 @@ void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
 
     unsigned long mail_num = convert_mail_num(arg);
 
-    if(mail_num == ULONG_MAX || mail_info->mail_count < mail_num || mail_num == 0){
-        char * msg = "-ERR no such message\r\n";
-        size_t len = strlen(msg);
+    if(check_mail(write_buffer, mail_info, mail_num)) {
+        size_t max_len;
+        uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
+            
+        int len = sprintf((char *)ptr, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
 
-        buffer_write_n(write_buffer, msg, len);
-        return;
+        buffer_write_adv(write_buffer, len);
     }
-
-    size_t max_len;
-    uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
-        
-    int len = sprintf((char *)ptr, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
-
-    buffer_write_adv(write_buffer, len);
 }
 
 void list_mails(buffer * write_buffer, user_mail_info * mail_info){
@@ -105,19 +103,21 @@ void list_mails(buffer * write_buffer, user_mail_info * mail_info){
     size_t max_len;
     uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
         
-    int length = sprintf((char *)response, "%s %ld %s %c%ld %s%c\n", "+OK", mail_info->mail_count, "messages", '(' , mail_info->total_octets, "octets", ')'); // TODO: change!!
+    int length = sprintf((char *)response, "%s %ld %s %c%ld %s%c\n", "+OK", mail_info->current_count, "messages", '(' , mail_info->total_octets, "octets", ')'); // TODO: change!!
 
     buffer_write_adv(write_buffer, length);    
 
     for(unsigned i=0; i < mail_info->mail_count; i++) {
-        size_t max_len;
-        uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
+        if(mail_info->mails[i].state != 0){
+            size_t max_len;
+            uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
         
-        int len = sprintf((char *)ptr, "%d %ld\n", i + 1, mail_info->mails[i].octets);
+            int len = sprintf((char *)ptr, "%d %ld\n", i + 1, mail_info->mails[i].octets);
 
-        buffer_write_adv(write_buffer, len);
+            buffer_write_adv(write_buffer, len);
 
-        bytes_written += len;
+            bytes_written += len;
+        }
     }
 }
 
@@ -127,7 +127,35 @@ void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
     size_t max_len;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
         
-    int length = sprintf((char *)ptr, "%s %ld %ld\n", "+OK", mail_info->mail_count , mail_info->total_octets);
+    int length = sprintf((char *)ptr, "%s %ld %ld\n", "+OK", mail_info->current_count, mail_info->total_octets);
 
     buffer_write_adv(write_buffer, length);
+}
+
+void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg) {
+    unsigned long mail_num = convert_mail_num(arg);
+
+    if(check_mail(write_buffer, mail_info, mail_num)) {
+        mail_info->mails[mail_num - 1].state = 0;
+        mail_info->current_count--;
+        mail_info->total_octets -= mail_info->mails[mail_num - 1].octets;
+
+
+        char * msg = "+OK message deleted\r\n";
+        size_t len = strlen(msg);
+
+        buffer_write_n(write_buffer, msg, len);
+    }
+}   
+
+
+static int check_mail(buffer * write_buffer, user_mail_info * mail_info, int mail_num) {
+    if(mail_num == ULONG_MAX || mail_info->mail_count < mail_num || mail_num == 0 || mail_info->mails[mail_num - 1].state == 0){
+        char * msg = "-ERR no such message\r\n";
+        size_t len = strlen(msg);
+
+        buffer_write_n(write_buffer, msg, len);
+        return 0;
+    }
+    return 1;
 }
