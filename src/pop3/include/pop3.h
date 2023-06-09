@@ -12,9 +12,7 @@ typedef int (*pop3_action)(client_connection_data * );
 #include "../../utils/include/selector.h"
 #include "../../utils/include/buffer.h"
 #include "../../include/common.h"
-#include "../../utils/include/stm.h"
 #include "../../parser/include/parser.h"
-
 #include <string.h>
 
 
@@ -38,7 +36,7 @@ typedef enum {
     SOCKET_READ_OK,
     SOCKET_DONE,
     SOCKET_ERROR
-}stm_io_state;
+}socket_state;
 
 
 // = = = = = ESTADO DE CLIENTE POP3 = = = = = 
