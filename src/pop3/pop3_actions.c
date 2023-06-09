@@ -3,12 +3,10 @@
 // EXP: puntero a funcion que ejecuta la accion
 typedef int (*pop3_action)(client_connection_data * );
 
-
 typedef struct pop3_action_type{
      command_type type;
      pop3_action handle;
 }pop3_action_type;
-
 
 // = = = =  Actions = = = =  
 int pop3_invalid_command_action(client_connection_data * client_data);
@@ -133,13 +131,11 @@ int pop3_user(client_connection_data * client_data){
           client_data->state = AUTH_PASSWORD;
           client_data->username = malloc(client_data->command_parser.arg_length + 1);
           strcpy(client_data->username, client_data->command_parser.current_command.argument);
-          printf("%s\n", client_data->username);
      }
      return true;
 }
 
 int pop3_pass(client_connection_data * client_data){
-     printf("%s\n", client_data->command_parser.current_command.argument);
      if (client_data->state == AUTH_PASSWORD) {
           user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
@@ -157,7 +153,7 @@ int pop3_pass(client_connection_data * client_data){
                buffer_write_n(&client_data->write_buffer, answer, len);
                client_data->state = TRANSACTION;
 
-               return true;;
+               return true;
           }
           
      }
@@ -190,7 +186,7 @@ int pop3_stat(client_connection_data * client_data) {
 }
 
 int pop3_quit(client_connection_data * client_data) {
-     char * msg = "QUIT\n";
+     char * msg = "QUIT\r\n";
 
      for(int i=0; msg[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, msg[i]);

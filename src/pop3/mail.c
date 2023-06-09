@@ -1,7 +1,7 @@
 #include "./include/mails.h"
 
 // TODO: change to pop3_server settings
-#define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir/"
+#define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir"
 //#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
 
 #define MAX_NAME_SIZE 256
@@ -16,9 +16,7 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username){
     if(file_name == NULL){
         return ERROR_ALLOC;
     }
-    int user_base_len = sprintf(file_name, "%s/%s/", DIR_BASE, username);
-
-    printf("%s\n",file_name);
+    int user_base_len = snprintf(file_name, dir_base_len + 2 * MAX_NAME_SIZE + 2, "%s/%s/", DIR_BASE, username);
 
     // EXP: abrimos el directorio
     DIR * dir = opendir(file_name);
@@ -91,7 +89,7 @@ void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
         size_t max_len;
         uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
             
-        int len = sprintf((char *)ptr, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
+        int len = snprintf((char *)ptr, max_len, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
 
         buffer_write_adv(write_buffer, len);
     }
@@ -103,7 +101,7 @@ void list_mails(buffer * write_buffer, user_mail_info * mail_info){
     size_t max_len;
     uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
         
-    int length = sprintf((char *)response, "%s %ld %s %c%ld %s%c\n", "+OK", mail_info->current_count, "messages", '(' , mail_info->total_octets, "octets", ')'); // TODO: change!!
+    int length = snprintf((char *)response,  max_len,"+OK %ld messages (%ld octets)\n", mail_info->current_count,  mail_info->total_octets); // TODO: change!!
 
     buffer_write_adv(write_buffer, length);    
 
@@ -112,7 +110,7 @@ void list_mails(buffer * write_buffer, user_mail_info * mail_info){
             size_t max_len;
             uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
         
-            int len = sprintf((char *)ptr, "%d %ld\n", i + 1, mail_info->mails[i].octets);
+            int len = snprintf((char *)ptr, max_len, "%d %ld\r\n", i + 1, mail_info->mails[i].octets);
 
             buffer_write_adv(write_buffer, len);
 
@@ -125,7 +123,7 @@ void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
     size_t max_len;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
         
-    int length = sprintf((char *)ptr, "%s %ld %ld\n", "+OK", mail_info->current_count, mail_info->total_octets);
+    int length = snprintf((char *)ptr, max_len, "+OK %ld %ld\r\n", mail_info->current_count, mail_info->total_octets);
 
     buffer_write_adv(write_buffer, length);
 }
@@ -158,7 +156,7 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
     size_t max_len;
     uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
         
-    int length = sprintf((char *)response, "%s %ld %s %c%ld %s%c\n", "+OK maildrop has", mail_info->current_count, "messages", '(' , mail_info->total_octets, "octets", ')');
+    int length = snprintf((char *)response, max_len, "+OK maildrop has %ld messages (%ld octets)\r\n",  mail_info->current_count, mail_info->total_octets);
 
     buffer_write_adv(write_buffer, length);  
 }
