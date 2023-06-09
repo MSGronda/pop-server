@@ -189,11 +189,7 @@ void pop3_dele(client_connection_data * client_data){
      delete_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
 }
 void pop3_rset(client_connection_data * client_data) {
-     char * msg = "RSET\n";
-
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
-     }
+     restore_mail(&client_data->write_buffer, &client_data->mail_info);
 }
 
 

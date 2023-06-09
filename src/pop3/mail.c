@@ -1,8 +1,8 @@
 #include "./include/mails.h"
 
 // TODO: change to pop3_server settings
-//#define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir/"
-#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
+#define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir/"
+//#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
 
 #define MAX_NAME_SIZE 256
 
@@ -147,6 +147,23 @@ void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg) 
         buffer_write_n(write_buffer, msg, len);
     }
 }   
+
+void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
+    for(unsigned i=0; i < mail_info->mail_count; i++) {
+        if(mail_info->mails[i].state == 0){
+            mail_info->mails[i].state = 1;
+            mail_info->current_count++;
+            mail_info->total_octets += mail_info->mails[i].octets;
+        }
+    }
+
+    size_t max_len;
+    uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
+        
+    int length = sprintf((char *)response, "%s %ld %s %c%ld %s%c\n", "+OK maildrop has", mail_info->current_count, "messages", '(' , mail_info->total_octets, "octets", ')');
+
+    buffer_write_adv(write_buffer, length);  
+}
 
 
 static int check_mail(buffer * write_buffer, user_mail_info * mail_info, int mail_num) {
