@@ -42,9 +42,24 @@ user_status login_user(const char * username, const char * password) {
     if (user_index < 0)
         return USER_ERROR;
     int pass = strcmp(users[user_index].pass, password);
-    if(pass != 0 )
+    if(pass != 0 || users[user_index].sessionActive == true )
         return USER_ERROR;
 
+    users[user_index].sessionActive = true;
+    return USER_OK;
+}
+
+user_status logout_user(const char * username){
+    //No deberia entrar a ningun caso del if pero se deja por claridad
+    if(users_count == 0) {
+        return GENERAL_ERROR;
+    }
+    int user_index = find_user(username);
+    if (user_index < 0)
+        return USER_ERROR;
+    if( users[user_index].sessionActive == false )
+        return USER_ERROR;
+    users[user_index].sessionActive = false;
     return USER_OK;
 }
 

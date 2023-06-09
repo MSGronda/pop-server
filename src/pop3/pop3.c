@@ -179,6 +179,11 @@ void pop3_close_handler(struct selector_key *key) {
         close(client_data->client_fd);
     }
 
+    // EXP: desactivo flag para indicar que usuario no esta logueado
+    if( client_data->username != NULL){
+        logout_user(client_data->username);
+    }
+
     // EXP: elimino de la lista y libero recursos
     client_connection_data * previous = find_previous_connection(client_data);
 

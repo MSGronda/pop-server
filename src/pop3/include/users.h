@@ -22,6 +22,8 @@ void load_users( users_data users_array[], size_t amount_users);
 // Login a user
 user_status login_user(const char * username, const char * password);
 
+user_status logout_user(const char * username);
+
 // Close user management
 int finish_users();
 

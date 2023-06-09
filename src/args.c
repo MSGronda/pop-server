@@ -36,6 +36,7 @@ user(char *s, users_data *user) {
         p++;
         user->name = s;
         user->pass = p;
+        user->sessionActive = false;
     }
 
 }
