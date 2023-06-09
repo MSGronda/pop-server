@@ -26,7 +26,8 @@ static const command_info all_command_info[] = {
         { .type = CMD_QUIT, .name = "QUIT", .min_args = 0, .max_args = 0,},
         { .type = CMD_DELE, .name = "DELE", .min_args = 1, .max_args = 1,},
         { .type = CMD_NOOP, .name = "NOOP", .min_args = 0, .max_args = 0,},
-        { .type = CMD_STAT, .name = "STAT", .min_args = 0, .max_args = 0,}
+        { .type = CMD_STAT, .name = "STAT", .min_args = 0, .max_args = 0,},
+        { .type = CMD_RSET, .name = "RSET", .min_args = 0, .max_args = 0,}
 };
 
 void parser_init(input_parser * parser) {

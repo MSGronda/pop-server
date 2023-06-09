@@ -11,6 +11,7 @@ void pop3_retr(client_connection_data * client_data);
 void pop3_dele(client_connection_data * client_data);
 void pop3_noop(client_connection_data * client_data);
 void pop3_list(client_connection_data * client_data);
+void pop3_rset(client_connection_data * client_data);
 static void send_back_to_ini(client_connection_data * client_data);
 
 
@@ -52,6 +53,7 @@ static const pop3_action_type transaction_actions[] = {
      {.type = CMD_DELE, .handle = &pop3_dele},
      {.type = CMD_NOOP, .handle = &pop3_noop},
      {.type = CMD_STAT, .handle = &pop3_stat},
+     {.type = CMD_RSET, .handle = &pop3_rset},
 };
 
 pop3_action find_action(command_type command, const pop3_action_type * actions, size_t size){
@@ -185,6 +187,13 @@ void pop3_quit(client_connection_data * client_data){
 }
 void pop3_dele(client_connection_data * client_data){
      char * msg = "DELE\n";
+
+     for(int i=0; msg[i]!=0; i++) {
+          buffer_write(&client_data->write_buffer, msg[i]);
+     }
+}
+void pop3_rset(client_connection_data * client_data) {
+     char * msg = "RSET\n";
 
      for(int i=0; msg[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, msg[i]);
