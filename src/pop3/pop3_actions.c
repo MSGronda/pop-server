@@ -55,28 +55,32 @@ pop3_action find_action(command_type command, const pop3_action_type * actions, 
 void pop3_action_handler(client_connection_data * client_data, command_state cmd_state) {
      command_type command = client_data->command_parser.current_command.type;
 
+     pop3_action action;
      if(cmd_state == COMMAND_ERROR_STATE || command == CMD_NOT_RECOGNIZED) {
-          pop3_invalid_command_action(client_data);
-          return;
+          action = &pop3_invalid_command_action;
+     }
+     else{
+          // EXP: busco y ejecuto el comando adecuado. si no es un comando valido para dicho estado, se ejecuta el pop3_invalid_command_action
+          switch(client_data->state){
+               case AUTH_INI:
+                    action = find_action(command, auth_ini_actions, sizeof(auth_ini_actions)/sizeof(pop3_action_type));
+                    break;
+               case AUTH_PASSWORD:
+                    action = find_action(command, auth_password_actions, sizeof(auth_password_actions)/sizeof(pop3_action_type));
+                    break;
+               case TRANSACTION:
+                    action = find_action(command, transaction_actions, sizeof(transaction_actions)/sizeof(pop3_action_type));
+                    break;
+               default:                      // TODO: error?
+                    action = &pop3_invalid_command_action;
+                    break;
+          }
+     
      }
 
-     pop3_action action;
-     // EXP: busco y ejecuto el comando adecuado. si no es un comando valido para dicho estado, se ejecuta el pop3_invalid_command_action
-     switch(client_data->state){
-          case AUTH_INI:
-               action = find_action(command, auth_ini_actions, sizeof(auth_ini_actions)/sizeof(pop3_action_type));
-               break;
-          case AUTH_PASSWORD:
-               action = find_action(command, auth_password_actions, sizeof(auth_password_actions)/sizeof(pop3_action_type));
-               break;
-          case TRANSACTION:
-               action = find_action(command, transaction_actions, sizeof(transaction_actions)/sizeof(pop3_action_type));
-               break;
-          default:
-          // TODO: error?
-               action = &pop3_invalid_command_action;
-               break;
-     }
+   
+     // EXP: guardamos la accion por si es multilinea y no se puede ejecutar de una.
+     // EXP: cada accion tiene que manejar el valor de finished y continuar con ejecucion si es relevante. 
      client_data->command.finished = false;
      client_data->command.action = action;
      
@@ -91,6 +95,7 @@ int pop3_invalid_command_action(client_connection_data * client_data) {
 
      // en la mayoria de los casos que se usa buffer_write_n, se asume que hay suficiente espacio
      // en el buffer para escribir (al ser una longitud constant y pequena)
+
 
      buffer_write_n(&client_data->write_buffer, msg, len);
      return true;      

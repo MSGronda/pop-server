@@ -69,7 +69,7 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 
     //  = = = = = MENSAJE INICIAL = = = = = 
     // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
-    char * hello_msg = "+OK pop3-server ready\n";
+    char * hello_msg = "+OK pop3-server ready\r\n";
     size_t hello_len = strlen(hello_msg);
 
     buffer_write_n(&new_connection->write_buffer, hello_msg, hello_len);
@@ -106,13 +106,13 @@ bool pop3_interpret_command(struct selector_key *key){
 
 void pop3_read_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
-    printf("reading!!\n");
 
     // EXP: recibo del cliente
     unsigned int io_state = socket_read(key);
 
     if(io_state == SOCKET_DONE || io_state == SOCKET_ERROR) {
         pop3_close_handler(key);
+        return;
     }
 
     bool complete_command = pop3_interpret_command(key);
@@ -126,21 +126,25 @@ void pop3_read_handler(struct selector_key *key) {
 
 void pop3_write_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
-    printf("writing!!\n");
 
-    // EXP: mando al cliente
+    // EXP: envio al cliente lo que esta en el buffer de salida
     unsigned int io_state = socket_write(key);
 
     if(io_state == SOCKET_ERROR) {
         pop3_close_handler(key);
+        return;
     }
 
+    // EXP: hay 3 casos por los cuales nos queremos mantener en escritura:
+    // 1) no se pudo mandar todo al cliente (la accion es multiline)
+    // 2) todavia hay comandos para leer y ejecutar (por pipelining)
+    // 3) no se le pudo mandar todo al cliente (en cualquier caso: single line, multiline, pipelining, etc)
+
+    // EXP: no termino de ejecutarse el comando (por falta de espacio en el buffer), continuo    
     if(!client_data->command.finished){
-        // EXP: sigo ejecutantando el comando 
         client_data->command.action(client_data);
     }
-    // EXP: todavia hay comandos en el buffer de lectura (por pipelining)
-    // EXP: hay que consumir y ejecutar
+    // EXP: todavia hay comandos en el buffer de lectura (por pipelining), hay que consumir y ejecutar
     else if(buffer_can_read(&client_data->read_buffer)){
         bool complete_command = pop3_interpret_command(key);
 
@@ -148,11 +152,12 @@ void pop3_write_handler(struct selector_key *key) {
             pop3_action_handler(client_data, client_data->command_parser.state);
         }
         else{
+            // EXP: el comando que lei esta incompleto, espero a que el usuario mande algo
             selector_set_interest_key(key, OP_READ);
         }
     }
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
-    if(!buffer_can_read(&client_data->write_buffer)){
+    else if(!buffer_can_read(&client_data->write_buffer)){
         selector_set_interest_key(key, OP_READ);
     } 
 }
@@ -162,7 +167,6 @@ void pop3_block_handler(struct selector_key *key) {
 
 void pop3_close_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
-    printf("closing!!\n");
 
     // EXP: debemos hacer esto porque selector_unregister_fd llama al close handler cuando termina
     if(!client_data->active){
