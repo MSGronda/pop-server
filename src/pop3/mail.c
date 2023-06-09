@@ -2,6 +2,7 @@
 
 // TODO: change to pop3_server settings
 #define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir/"
+//#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
 
 #define MAX_NAME_SIZE 256
 
@@ -15,9 +16,12 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username){
     }
     int user_base_len = sprintf(file_name, "%s/%s/", DIR_BASE, username);
 
+    printf("%s\n",file_name);
+
     // EXP: abrimos el directorio
     DIR * dir = opendir(file_name);
     if(dir == NULL){
+        printf("Error opening dir\n");
         return ERROR_OPENDIR;
     }
     struct dirent * dir_info = readdir(dir);
@@ -98,9 +102,12 @@ void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
 void list_mails(buffer * write_buffer, user_mail_info * mail_info){
     size_t bytes_written = 0;
 
-    char * initial = "+OK\n";
-    size_t len = strlen(initial);
-    buffer_write_n(write_buffer, initial, len);         // TODO: change!!
+    size_t max_len;
+    uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
+        
+    int length = sprintf((char *)response, "%s %ld %s %c%ld %s%c\n", "+OK", mail_info->mail_count, "messages", '(' , mail_info->total_octets, "octets", ')'); // TODO: change!!
+
+    buffer_write_adv(write_buffer, length);    
 
     for(unsigned i=0; i < mail_info->mail_count; i++) {
         size_t max_len;
@@ -112,4 +119,15 @@ void list_mails(buffer * write_buffer, user_mail_info * mail_info){
 
         bytes_written += len;
     }
+}
+
+void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
+
+
+    size_t max_len;
+    uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
+        
+    int length = sprintf((char *)ptr, "%s %ld %ld\n", "+OK", mail_info->mail_count , mail_info->total_octets);
+
+    buffer_write_adv(write_buffer, length);
 }

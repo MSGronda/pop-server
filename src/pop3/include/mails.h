@@ -36,6 +36,7 @@ typedef struct user_mail_info{
 unsigned int initialize_mails(user_mail_info * mail_info, char * username);
 void list_mails(buffer * write_buffer, user_mail_info * mail_info);
 void list_mail(buffer * write_buffer, user_mail_info * mail_info, char * mail_num);
+void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info);
 
 
 #endif

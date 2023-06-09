@@ -141,6 +141,7 @@ void pop3_pass(client_connection_data * client_data){
                if(resp != MAILS_SUCCESS) {
                     // TODO: handle error. Quizas cerrar conexion.
                     printf("ERROR loading mail data\n");
+                    printf("falle en :%d\n", resp);
                }
 
                char * answer = "+OK\r\n";
@@ -172,12 +173,9 @@ void pop3_retr(client_connection_data * client_data){
 }
 
 void pop3_stat(client_connection_data * client_data){
-     char * msg = "STAT\n";
-
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
-     }
+     stat_mailbox(&client_data->write_buffer, &client_data->mail_info);
 }
+
 void pop3_quit(client_connection_data * client_data){
      char * msg = "QUIT\n";
 
