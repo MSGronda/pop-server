@@ -26,7 +26,7 @@ typedef int (*pop3_action)(client_connection_data * );
 typedef struct running_command{
     bool finished;
     size_t bytes_written;
-    pop3_action action;
+    command_type command_num;
 }running_command;
 
 // = = = = = MAQUINA DE ESTADOS = = = = = 

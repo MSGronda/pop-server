@@ -80,17 +80,27 @@ void pop3_action_handler(client_connection_data * client_data, command_state cmd
           }
      
      }
-
    
      // EXP: guardamos la accion por si es multilinea y no se puede ejecutar de una.
      // EXP: cada accion tiene que manejar el valor de finished y continuar con ejecucion si es relevante. 
-     client_data->command.action = action;
+     client_data->command.command_num = command;
      client_data->command.finished =  action(client_data);
 
      // EXP: reseteo comando 
      if(client_data->command.finished){
           client_data->command.bytes_written = 0;
-          client_data->command.action = NULL;
+     }
+}
+
+void pop3_continue_action(client_connection_data * client_data){
+     command_type command = client_data->command.command_num;
+
+     // EXP: solo puede ocurrir que no se manda una respuesta correcta en transaction (por RETR y LIST)
+     client_data->command.finished =  find_action(command, transaction_actions, sizeof(transaction_actions)/sizeof(pop3_action_type))(client_data);
+
+     // EXP: reseteo comando 
+     if(client_data->command.finished){
+          client_data->command.bytes_written = 0;
      }
 }
 

@@ -87,7 +87,7 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
 
     new_connection->command.finished = 1;
     new_connection->command.bytes_written = 0;
-    new_connection->command.action = NULL;
+    new_connection->command.command_num = CMD_NOT_RECOGNIZED;
 
     return new_connection;
 }
@@ -142,17 +142,11 @@ void pop3_write_handler(struct selector_key *key) {
     // 2) todavia hay comandos para le`er y ejecutar (por pipelining)
     // 3) no se le pudo mandar todo al cliente (en cualquier caso: single line, multiline, pipelining, etc)
 
-    // EXP: usamos else if para obligar que primero mande la respuesta al usaurio siempre antes de continuar
+    // EXP: usamos else if para obligar que primero escriba al socket antes de continuar
 
     // EXP: no termino de ejecutarse el comando (por falta de espacio en el buffer), continuo    
     if(!client_data->command.finished){
-        client_data->command.finished = client_data->command.action(client_data);
-
-        // EXP: reseteo comando 
-        if(client_data->command.finished){
-            client_data->command.bytes_written = 0;
-            client_data->command.action = NULL;
-        }
+        pop3_continue_action(client_data);
     }
     // EXP: todavia hay comandos en el buffer de lectura (por pipelining), hay que consumir y ejecutar
     else if(buffer_can_read(&client_data->read_buffer)){
