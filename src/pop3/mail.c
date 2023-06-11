@@ -261,11 +261,13 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
 // = = = = = = =<   RETR   >= = = = = = = 
 
 void mail_read_handler(struct selector_key *key){
+    char * error_msg;
     user_mail_info * mail_info = ATTACHMENT_MAIL(key);
 
     if(!buffer_can_write(&mail_info->retrive_buffer)){
         return;
     }
+
     size_t read_max;   
     uint8_t * buffer = buffer_write_ptr(&mail_info->retrive_buffer, &read_max);
 
@@ -273,21 +275,13 @@ void mail_read_handler(struct selector_key *key){
     off_t seek = lseek(mail_info->filed_fd, mail_info->bytes_read, SEEK_SET);
 
     if(seek == -1){
-        printf("Error lseek\n");
-        mail_info->finished_reading = true;
-        selector_unregister_fd(key->s, mail_info->filed_fd);
-        // TODO: handle error
-        return;
+        ERROR_CATCH("Error lseek of mail file.", error)
     }
 
     ssize_t recieved_count = read(mail_info->filed_fd, buffer, read_max);
 
     if(recieved_count == -1) {
-        printf("Error read. ERRNO: %d\n", errno);
-        mail_info->finished_reading = true;
-        selector_unregister_fd(key->s, mail_info->filed_fd);
-        // TODO: handle error
-        return;
+        ERROR_CATCH("Error reading from mail file.", error)
     }
 
     // EXP: llegue al final del archivo, marco como si termine.
@@ -299,11 +293,92 @@ void mail_read_handler(struct selector_key *key){
 
     buffer_write_adv(&mail_info->retrive_buffer, recieved_count);
     mail_info->bytes_read += recieved_count;
+
+    return;
+
+error:
+    // TODO: log error
+    printf("%s\n", error_msg);
+    mail_info->finished_reading = true;
+    selector_unregister_fd(key->s, mail_info->filed_fd);
+}
+
+
+int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char ** error_msg){
+    client_connection_data * client_data = ATTACHMENT(key);
+
+    char * file_name;
+    int user_base_len = user_file_name(&file_name, client_data->username);
+
+    if(user_base_len == ERROR_ALLOC){
+        *error_msg = "Error allocating for mail file name.";
+        return false;
+    }
+    sprintf(file_name + user_base_len, "%s", client_data->mail_info.mails[mail_num - 1].name);
+
+    FILE * file = fopen(file_name,"r");
+    if(file == NULL){
+        free(file_name);
+        *error_msg = "Error opening mail file.";
+        return false;
+    }
+
+    // EXP: libero el nombre del archivo completo ya que no lo necesito. 
+    free(file_name);
+
+    int file_fd = fileno(file);
+    if(file_fd == -1){
+        fclose(file);
+        *error_msg = "Error converting FILE to fd.";
+        return false;
+    }
+
+    client_data->mail_info.filed_fd = file_fd;
+    client_data->mail_info.bytes_read = 0;
+
+
+    // EXP: me suscribo a la lectura del archivo con el mismo selector que tiene a todos los clientes 
+    // EXP: esto evita que un usuario lea un archivo enorme y bloquee al resto de los clientes (al ser un solo hilo)
+    if(selector_register(key->s, file_fd, &mail_handlers, OP_READ, &client_data->mail_info) != SELECTOR_SUCCESS){
+        close(file_fd);
+        *error_msg = "Error registering to selector in RETR.";
+        return false;
+    }
+
+    return true;
+}
+
+void transfer_bytes(buffer * retrive_buffer, buffer * write_buffer, size_t * bytes_written){
+    size_t read_max;   
+    uint8_t * read_addr = buffer_read_ptr(retrive_buffer, &read_max);
+
+    size_t write_max;   
+    uint8_t * write_addr = buffer_write_ptr(write_buffer, &write_max);
+
+    // TODO: byte stuffing (!!!!)
+
+    size_t min = write_max > read_max ? read_max : write_max;
+
+    memcpy(write_addr, read_addr, min);
+
+    buffer_read_adv(retrive_buffer, min);
+    buffer_write_adv(write_buffer, min);
+    *bytes_written += min;
+}
+
+void finish_mail_retrieval(user_mail_info * mail_info){
+    // fclose(file); // TODO: tengo que cerrar el archivo y el fd o puedo hacer solo uno (?)
+    close(mail_info->filed_fd);
+
+    mail_info->filed_fd = 0;
+    mail_info->bytes_read = 0;
+    mail_info->finished_reading = 0;
 }
 
 // EXP: por lo general intentamos pasarlo lo minimo indespensable a las funciones
 // EXP: pero en este caso requiere tantos parametros que es mejor solo pasarle la estructura entera
 int retrieve_mail(struct selector_key *key) {
+    char * error_msg;
     client_connection_data * client_data = ATTACHMENT(key);
 
     unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
@@ -314,41 +389,12 @@ int retrieve_mail(struct selector_key *key) {
         return true;
     }
 
+    // EXP: todavia no abri el archivo ni me suscribi a la lectura
     if(client_data->mail_info.filed_fd == 0) {
-        char * file_name;
-        int user_base_len = user_file_name(&file_name, client_data->username);
+        int setup_success = setup_mail_retrieval(key, mail_num, &error_msg);
 
-        if(user_base_len == ERROR_ALLOC){
-            printf("Error user_file_name\n");
-            // TODO: handle error
-            return true;
-        }
-        sprintf(file_name + user_base_len, "%s", client_data->mail_info.mails[mail_num - 1].name);
-
-        FILE * file = fopen(file_name,"r");
-        if(file == NULL){
-            printf("Error fopen, errno:%d\n",errno);
-            // TODO: handle error
-            return true;
-        }
-
-        // EXP: libero el nombre del archivo completo ya que no lo necesito. 
-        free(file_name);
-
-        int file_fd = fileno(file);
-        if(file_fd == -1){
-            printf("Error fileno\n");
-            // TODO: handle error
-            return true;
-        }
-
-        client_data->mail_info.filed_fd = file_fd;
-        client_data->mail_info.bytes_read = 0;
-
-        if(selector_register(key->s, file_fd, &mail_handlers, OP_READ, &client_data->mail_info) != SELECTOR_SUCCESS){
-            printf("Error registering selector to read file\n");
-            // TODO: handle error
-            return true;
+        if(!setup_success){
+            goto error;
         }
 
         // EXP: no termine, tengo que seguir probando (?)
@@ -356,38 +402,22 @@ int retrieve_mail(struct selector_key *key) {
     }
 
     if(buffer_can_read(&client_data->mail_info.retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
-        size_t read_max;   
-        uint8_t * read_buffer = buffer_read_ptr(&client_data->mail_info.retrive_buffer, &read_max);
-
-        size_t write_max;   
-        uint8_t * write_buffer = buffer_write_ptr(&client_data->write_buffer, &write_max);
-
-        // TODO: byte stuffing (!!!!)
-
-        size_t min = write_max > read_max ? read_max : write_max;
-
-        memcpy(write_buffer, read_buffer, min);
-
-        buffer_read_adv(&client_data->mail_info.retrive_buffer, min);
-        buffer_write_adv(&client_data->write_buffer, min);
-        client_data->command.bytes_written += min;
-
+        transfer_bytes(&client_data->mail_info.retrive_buffer, &client_data->write_buffer, &client_data->command.bytes_written);
     }
 
     // TODO: "apagar" el fd de lectura del archivo si no puedo escribir en el buffer de salida del cliente, para no gastar recursos.
 
     if(client_data->mail_info.finished_reading){
-
-        // fclose(file); // TODO: tengo que cerrar el archivo y el fd o puedo hacer solo uno (?)
-        close(client_data->mail_info.filed_fd);
-
-        client_data->mail_info.filed_fd = 0;
-        client_data->mail_info.bytes_read = 0;
-        client_data->mail_info.finished_reading = 0;
-
+        finish_mail_retrieval(&client_data->mail_info);
         return true;
     }
 
-
     return false;
+
+
+error:
+    // TODO: log error
+    printf("%s\n", error_msg);
+    handle_invalid_mail(&client_data->write_buffer);
+    return true;
 }

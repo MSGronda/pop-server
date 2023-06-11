@@ -4,6 +4,7 @@
 
 #include "../../utils/include/buffer.h"
 #include "../../utils/include/selector.h"
+#include "../../include/common.h"
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>

@@ -166,12 +166,14 @@ void pop3_write_handler(struct selector_key *key) {
             pop3_action_handler(key);
         }
         else{
+            // TODO: check error
             // EXP: el comando que lei esta incompleto, espero a que el usuario mande algo
             selector_set_interest_key(key, OP_READ);
         }
     }
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
     else if(!buffer_can_read(&client_data->write_buffer)){
+        // TODO: check error
         selector_set_interest_key(key, OP_READ);
     } 
 }
