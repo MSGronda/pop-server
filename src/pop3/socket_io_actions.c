@@ -35,7 +35,7 @@ unsigned int socket_write(struct selector_key *key) {
     // EXP: solo avanzo (en el buffer) la cantidad que realmente pude mandar
     size_t write_max;
     uint8_t * buffer = buffer_read_ptr(&client_data->write_buffer, &write_max);
-    ssize_t sent_count = send(key->fd, buffer, write_max, 0);
+    ssize_t sent_count = send(key->fd, buffer, write_max, MSG_NOSIGNAL);
 
     if(sent_count == -1){
         return SOCKET_ERROR;

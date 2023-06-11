@@ -231,6 +231,18 @@ static unsigned long check_mail(buffer * write_buffer, user_mail_info * mail_inf
 
 #define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
 
+
+void free_mail_info(struct selector_key *key){
+    client_connection_data * client_data = ATTACHMENT(key);
+
+    client_data->mail_info.finished_reading = true;
+    if(client_data->mail_info.filed_fd != 0){
+        selector_unregister_fd(key->s, client_data->mail_info.filed_fd);
+        close(client_data->mail_info.filed_fd);
+    }
+}
+
+
 void mail_read_handler(struct selector_key *key){
     user_mail_info * mail_info = ATTACHMENT_MAIL(key);
 

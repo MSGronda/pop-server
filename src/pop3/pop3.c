@@ -187,6 +187,7 @@ void pop3_close_handler(struct selector_key *key) {
         return;
     }
     client_data->active = 0;
+    client_data->command.finished = true;
 
     if(client_data->client_fd != -1) {
         selector_unregister_fd(key->s, client_data->client_fd);
@@ -210,6 +211,9 @@ void pop3_close_handler(struct selector_key *key) {
     else {
         previous->next = client_data->next;
     }
+
+    free_mail_info(key);
+
     free(client_data);
 }
 
