@@ -102,8 +102,8 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     return new_connection;
 }
 
-bool pop3_interpret_command(struct selector_key *key){
-    client_connection_data * client_data = ATTACHMENT(key);
+bool pop3_interpret_command(client_connection_data * client_data){
+
     // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
     // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
     bool finished = 0;          // TODO: check esto porque si o si hay que inicializarlo en 0
@@ -127,11 +127,11 @@ void pop3_read_handler(struct selector_key *key) {
         return;
     }
 
-    bool complete_command = pop3_interpret_command(key);
+    bool complete_command = pop3_interpret_command(client_data);
 
     if(complete_command){
         // EXP: ejecuto el comando y me paso para escribir respuesta
-        pop3_action_handler(client_data, client_data->command_parser.state);
+        pop3_action_handler(key);
         selector_set_interest_key(key, OP_WRITE);
     }   
 }
@@ -156,14 +156,14 @@ void pop3_write_handler(struct selector_key *key) {
 
     // EXP: no termino de ejecutarse el comando (por falta de espacio en el buffer), continuo    
     if(!client_data->command.finished){
-        pop3_continue_action(client_data);
+        pop3_continue_action(key);
     }
     // EXP: todavia hay comandos en el buffer de lectura (por pipelining), hay que consumir y ejecutar
     else if(buffer_can_read(&client_data->read_buffer)){
-        bool complete_command = pop3_interpret_command(key);
+        bool complete_command = pop3_interpret_command(client_data);
 
         if(complete_command){
-            pop3_action_handler(client_data, client_data->command_parser.state);
+            pop3_action_handler(key);
         }
         else{
             // EXP: el comando que lei esta incompleto, espero a que el usuario mande algo
@@ -249,9 +249,6 @@ void pop3_passive_handler(struct selector_key *key) {
     if(new_client == NULL) {
         ERROR_CATCH("Error generating client connection data", finally)
     }
-
-    // TODO: !!!!!!!!!!!!!!!!!!! REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    new_client->key = key;
 
     // EXP: configuro todos los handlers para los distintos casos: read, write, close, block
     // EXP: lo registramos como OP_WRITE ya que queremos primero mandar el "+OK server ready" antes de recibir comandos

@@ -53,5 +53,5 @@ int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * mail_num
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info);
 void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg);
 void restore_mail(buffer * write_buffer, user_mail_info * mail_info);
-int retrieve_mail(client_connection_data * client_data);
+int retrieve_mail(struct selector_key *key);
 #endif

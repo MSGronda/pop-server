@@ -281,7 +281,8 @@ static const struct fd_handler mail_handlers ={
 
 // EXP: por lo general intentamos pasarlo lo minimo indespensable a las funciones
 // EXP: pero en este caso requiere tantos parametros que es mejor solo pasarle la estructura entera
-int retrieve_mail(client_connection_data * client_data) {
+int retrieve_mail(struct selector_key *key) {
+    client_connection_data * client_data = ATTACHMENT(key);
     unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
 
     if(!check_mail(&client_data->write_buffer, &client_data->mail_info, mail_num)) {
@@ -299,9 +300,6 @@ int retrieve_mail(client_connection_data * client_data) {
             return true;
         }
         sprintf(file_name + user_base_len,"%s", client_data->mail_info.mails[mail_num - 1].name);
-
-        printf("%s\n",file_name);
-
 
         FILE * file = fopen(file_name,"r");
         if(file == NULL){
@@ -322,7 +320,7 @@ int retrieve_mail(client_connection_data * client_data) {
         client_data->mail_info.filed_fd = file_fd;
         client_data->mail_info.bytes_read = 0;
 
-        if(selector_register(client_data->key->s, file_fd, &mail_handlers, OP_READ, &client_data->mail_info) != SELECTOR_SUCCESS){
+        if(selector_register(key->s, file_fd, &mail_handlers, OP_READ, &client_data->mail_info) != SELECTOR_SUCCESS){
             printf("Error registering selector to read file\n");
             // TODO: handle error
             return true;

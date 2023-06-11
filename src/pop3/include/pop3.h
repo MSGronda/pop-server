@@ -2,14 +2,15 @@
 #define POP3_H
 
 #include <stdlib.h>
+#include "../../utils/include/selector.h"
 
 typedef struct client_connection_data client_connection_data;
-typedef int (*pop3_action)(client_connection_data * );
+typedef int (*pop3_action)(struct selector_key *key );
 
 #include "./mails.h"
 #include "./socket_io_actions.h"
 #include "pop3_actions.h"
-#include "../../utils/include/selector.h"
+
 #include "../../utils/include/buffer.h"
 #include "../../include/common.h"
 #include "../../parser/include/parser.h"
@@ -71,8 +72,6 @@ typedef struct client_connection_data{
     char * username;                            // client username
 
     user_mail_info mail_info;                   // informacion sobre los mails en la casilla del usuario
-
-    struct selector_key *key;                   // TODO: check this. recursion and bad style.
 
     client_connection_data * next;              // proximo cliente en la lista de clientes
 }client_connection_data;

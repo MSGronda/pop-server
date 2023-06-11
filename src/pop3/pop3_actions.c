@@ -1,7 +1,7 @@
 #include "./include/pop3_actions.h"
 
 // EXP: puntero a funcion que ejecuta la accion
-typedef int (*pop3_action)(client_connection_data * );
+typedef int (*pop3_action)(struct selector_key *key );
 
 typedef struct pop3_action_type{
      command_type type;
@@ -9,17 +9,20 @@ typedef struct pop3_action_type{
 }pop3_action_type;
 
 // = = = =  Actions = = = =  
-int pop3_invalid_command_action(client_connection_data * client_data);
-int pop3_stat(client_connection_data * client_data);
-int pop3_user(client_connection_data * client_data);
-int pop3_pass(client_connection_data * client_data);
-int pop3_capa(client_connection_data * client_data);
-int pop3_quit(client_connection_data * client_data);
-int pop3_retr(client_connection_data * client_data);
-int pop3_dele(client_connection_data * client_data);
-int pop3_noop(client_connection_data * client_data);
-int pop3_list(client_connection_data * client_data);
-int pop3_rset(client_connection_data * client_data);
+
+// EXP: pasamos el selector_key (y no solo el client_data) dado que hay comandos que necesitan ese selector_key, ej: RETR
+
+int pop3_invalid_command_action(struct selector_key *key);
+int pop3_stat(struct selector_key *key);
+int pop3_user(struct selector_key *key);
+int pop3_pass(struct selector_key *key);
+int pop3_capa(struct selector_key *key);
+int pop3_quit(struct selector_key *key);
+int pop3_retr(struct selector_key *key);
+int pop3_dele(struct selector_key *key);
+int pop3_noop(struct selector_key *key);
+int pop3_list(struct selector_key *key);
+int pop3_rset(struct selector_key *key);
 static void send_back_to_ini(client_connection_data * client_data);
 
 // EXP: contienen los comandos validos para cada estado / subestado
@@ -54,9 +57,11 @@ pop3_action find_action(command_type command, const pop3_action_type * actions, 
      return &pop3_invalid_command_action;
 }
 
+void pop3_action_handler(struct selector_key *key) {
+     client_connection_data * client_data = ATTACHMENT(key);
 
-void pop3_action_handler(client_connection_data * client_data, command_state cmd_state) {
      command_type command = client_data->command_parser.current_command.type;
+     command_state cmd_state = client_data->command_parser.state;
 
      pop3_action action;
      if(cmd_state == COMMAND_ERROR_STATE || command == CMD_NOT_RECOGNIZED) {
@@ -84,7 +89,7 @@ void pop3_action_handler(client_connection_data * client_data, command_state cmd
      // EXP: guardamos la accion por si es multilinea y no se puede ejecutar de una.
      // EXP: cada accion tiene que manejar el valor de finished y continuar con ejecucion si es relevante. 
      client_data->command.command_num = command;
-     client_data->command.finished =  action(client_data);
+     client_data->command.finished =  action(key);
 
      // EXP: reseteo comando 
      if(client_data->command.finished){
@@ -92,11 +97,14 @@ void pop3_action_handler(client_connection_data * client_data, command_state cmd
      }
 }
 
-void pop3_continue_action(client_connection_data * client_data){
+// EXP: pasamos el selector_key (y no solo el client_data) dado que hay comandos que necesitan ese selector_key, ej: RETR
+void pop3_continue_action(struct selector_key *key){
+     client_connection_data * client_data = ATTACHMENT(key);
+
      command_type command = client_data->command.command_num;
 
      // EXP: solo puede ocurrir que no se manda una respuesta correcta en transaction (por RETR y LIST)
-     client_data->command.finished =  find_action(command, transaction_actions, sizeof(transaction_actions)/sizeof(pop3_action_type))(client_data);
+     client_data->command.finished =  find_action(command, transaction_actions, sizeof(transaction_actions)/sizeof(pop3_action_type))(key);
 
      // EXP: reseteo comando 
      if(client_data->command.finished){
@@ -104,7 +112,8 @@ void pop3_continue_action(client_connection_data * client_data){
      }
 }
 
-int pop3_invalid_command_action(client_connection_data * client_data) {
+int pop3_invalid_command_action(struct selector_key *key) {
+     client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "-ERR invalid command\r\n";
      size_t len = strlen(msg);
 
@@ -116,7 +125,8 @@ int pop3_invalid_command_action(client_connection_data * client_data) {
      buffer_write_n(&client_data->write_buffer, msg, len);
      return true;      
 }    
-int pop3_noop(client_connection_data * client_data){
+int pop3_noop(struct selector_key *key){
+     client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "+OK\r\n";
      size_t len = strlen(msg);
 
@@ -124,7 +134,8 @@ int pop3_noop(client_connection_data * client_data){
      return true;
 }
 
-int pop3_capa(client_connection_data * client_data){
+int pop3_capa(struct selector_key *key){
+     client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "+OK\r\nCAPA\r\nPIPELINING\r\nUSER\r\n.\r\n";
      size_t len = strlen(msg);
      send_back_to_ini(client_data);
@@ -133,7 +144,8 @@ int pop3_capa(client_connection_data * client_data){
      return true;
 }
 
-int pop3_user(client_connection_data * client_data){
+int pop3_user(struct selector_key *key){
+     client_connection_data * client_data = ATTACHMENT(key);
      int index = find_user(client_data->command_parser.current_command.argument);
 
      char * answer = "+OK\r\n";
@@ -148,7 +160,8 @@ int pop3_user(client_connection_data * client_data){
      return true;
 }
 
-int pop3_pass(client_connection_data * client_data){
+int pop3_pass(struct selector_key *key){
+     client_connection_data * client_data = ATTACHMENT(key);
      if (client_data->state == AUTH_PASSWORD) {
           user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
@@ -177,7 +190,8 @@ int pop3_pass(client_connection_data * client_data){
      return true;
 }
 
-int pop3_list(client_connection_data * client_data) {
+int pop3_list(struct selector_key *key) {
+     client_connection_data * client_data = ATTACHMENT(key);
      if(client_data->command_parser.args_count == 0){
           return list_mails(&client_data->write_buffer, &client_data->mail_info, &client_data->command);
      }
@@ -186,17 +200,19 @@ int pop3_list(client_connection_data * client_data) {
      }
 }
 
-int pop3_retr(client_connection_data * client_data) {
-     return retrieve_mail(client_data);
+int pop3_retr(struct selector_key *key) {
+     return retrieve_mail(key);
 }
 
 
-int pop3_stat(client_connection_data * client_data) {
+int pop3_stat(struct selector_key *key) {
+     client_connection_data * client_data = ATTACHMENT(key);
      stat_mailbox(&client_data->write_buffer, &client_data->mail_info);
      return true;
 }
 
-int pop3_quit(client_connection_data * client_data) {
+int pop3_quit(struct selector_key *key) {
+     client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "QUIT\r\n";
 
      for(int i=0; msg[i]!=0; i++) {
@@ -205,12 +221,14 @@ int pop3_quit(client_connection_data * client_data) {
      return true;
 }
 
-int pop3_dele(client_connection_data * client_data) {
+int pop3_dele(struct selector_key *key) {
+     client_connection_data * client_data = ATTACHMENT(key);
      delete_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
      return true;
 }
 
-int pop3_rset(client_connection_data * client_data) {
+int pop3_rset(struct selector_key *key) {
+     client_connection_data * client_data = ATTACHMENT(key);
      restore_mail(&client_data->write_buffer, &client_data->mail_info);
      return true;
 }
