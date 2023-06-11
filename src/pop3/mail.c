@@ -1,12 +1,34 @@
 #include "./include/mails.h"
 
+void mail_read_handler(struct selector_key *key);
+
+// = = = = = = =<   CONSTANTES / VARIABLES ESTATICAS  >= = = = = = = 
+
 // TODO: change to pop3_server settings
 #define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir"
 //#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
 
 #define MAX_NAME_SIZE 256
 
-static unsigned long check_mail(buffer * write_buffer, user_mail_info * mail_info, unsigned long mail_num);
+static const struct fd_handler mail_handlers ={
+    .handle_read = &mail_read_handler,
+    .handle_write = NULL,
+    .handle_close = NULL,
+    .handle_block = NULL,
+};
+
+
+// = = = = = = =<   HELPER FUNCTIONS / MACROS  >= = = = = = = 
+
+#define VALID_MAIL(mail_num, mail_info) (mail_num != ULONG_MAX && mail_num != 0  && mail_info->mail_count >= mail_num  && mail_info->mails[mail_num - 1].state != 0)
+#define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
+
+void handle_invalid_mail(buffer * write_buffer){
+    char * msg = "-ERR no such message\r\n";
+    size_t len = strlen(msg);
+
+    buffer_write_n(write_buffer, msg, len);
+}
 
 int user_file_name(char ** file_name, char * username){
     // EXP: generamos un string que tenga como base el directorio del usuario
@@ -19,6 +41,30 @@ int user_file_name(char ** file_name, char * username){
 
     return user_base_len;
 }
+
+unsigned long convert_mail_num(char * arg){
+    for(int i=0; arg[i] != 0; i++){
+        if(!isdigit(arg[i])){
+            return LONG_MAX;
+        }
+    }
+    return strtoul(arg, NULL, 10);
+}
+
+unsigned int num_string_size(size_t num){
+    if(num == 0){
+        return 1;
+    }
+    size_t n = num;
+    unsigned i=0;
+    while(n != 0){
+        i++;
+        n /= 10;
+    }
+    return i;
+}
+
+// = = = = = = =<   INICIALIZACION Y DESTRUCCION  >= = = = = = = 
 
 unsigned int initialize_mails(user_mail_info * mail_info, char * username){
 
@@ -78,42 +124,37 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username){
     return MAILS_SUCCESS;
 }
 
-unsigned long convert_mail_num(char * arg){
-    for(int i=0; arg[i] != 0; i++){
-        if(!isdigit(arg[i])){
-            return LONG_MAX;
-        }
+void free_mail_info(struct selector_key *key){
+    client_connection_data * client_data = ATTACHMENT(key);
+
+    client_data->mail_info.finished_reading = true;
+    if(client_data->mail_info.filed_fd != 0){
+        selector_unregister_fd(key->s, client_data->mail_info.filed_fd);
+        close(client_data->mail_info.filed_fd);
     }
-    return strtoul(arg, NULL, 10);
 }
+
+// = = = = = = =<   COMANDOS  >= = = = = = = 
 
 int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
     // EXP: se considera single-line esta respuesta por ende, podemos esribir la respuesta de una
 
     unsigned long mail_num = convert_mail_num(arg);
 
-    if(check_mail(write_buffer, mail_info, mail_num)) {
-        size_t max_len;
-        uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
-            
-        int len = snprintf((char *)ptr, max_len, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
-
-        buffer_write_adv(write_buffer, len);
+    if(!VALID_MAIL(mail_num, mail_info)){
+        handle_invalid_mail(write_buffer);
+        return true;
     }
+
+
+    size_t max_len;
+    uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
+        
+    int len = snprintf((char *)ptr, max_len, "+OK %ld %ld\r\n", mail_num, mail_info->mails[mail_num - 1].octets);
+
+    buffer_write_adv(write_buffer, len);
+    
     return true;
-}
-
-unsigned int num_string_size(size_t num){
-    if(num == 0){
-        return 1;
-    }
-    size_t n = num;
-    unsigned i=0;
-    while(n != 0){
-        i++;
-        n /= 10;
-    }
-    return i;
 }
 
 // TODO: importante ver si podemos hacer esto de otra forma
@@ -183,17 +224,19 @@ void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
 void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg) {
     unsigned long mail_num = convert_mail_num(arg);
 
-    if(check_mail(write_buffer, mail_info, mail_num)) {
-        mail_info->mails[mail_num - 1].state = 0;
-        mail_info->current_count--;
-        mail_info->total_octets -= mail_info->mails[mail_num - 1].octets;
-
-
-        char * msg = "+OK message deleted\r\n";
-        size_t len = strlen(msg);
-
-        buffer_write_n(write_buffer, msg, len);
+    if(!VALID_MAIL(mail_num, mail_info)){
+        handle_invalid_mail(write_buffer);
     }
+
+    mail_info->mails[mail_num - 1].state = 0;
+    mail_info->current_count--;
+    mail_info->total_octets -= mail_info->mails[mail_num - 1].octets;
+
+    char * msg = "+OK message deleted\r\n";
+    size_t len = strlen(msg);
+
+    buffer_write_n(write_buffer, msg, len);
+
 }   
 
 void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
@@ -214,34 +257,8 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
 }
 
 
-static unsigned long check_mail(buffer * write_buffer, user_mail_info * mail_info, unsigned long mail_num) {
-    if(mail_num == ULONG_MAX || mail_info->mail_count < mail_num || mail_num == 0 || mail_info->mails[mail_num - 1].state == 0){
-        char * msg = "-ERR no such message\r\n";
-        size_t len = strlen(msg);
-
-        buffer_write_n(write_buffer, msg, len);
-        return false;
-    }
-    return true;
-}
-
-
 
 // = = = = = = =<   RETR   >= = = = = = = 
-
-#define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
-
-
-void free_mail_info(struct selector_key *key){
-    client_connection_data * client_data = ATTACHMENT(key);
-
-    client_data->mail_info.finished_reading = true;
-    if(client_data->mail_info.filed_fd != 0){
-        selector_unregister_fd(key->s, client_data->mail_info.filed_fd);
-        close(client_data->mail_info.filed_fd);
-    }
-}
-
 
 void mail_read_handler(struct selector_key *key){
     user_mail_info * mail_info = ATTACHMENT_MAIL(key);
@@ -284,24 +301,19 @@ void mail_read_handler(struct selector_key *key){
     mail_info->bytes_read += recieved_count;
 }
 
-static const struct fd_handler mail_handlers ={
-    .handle_read = &mail_read_handler,
-    .handle_write = NULL,
-    .handle_close = NULL,
-    .handle_block = NULL,
-};
-
 // EXP: por lo general intentamos pasarlo lo minimo indespensable a las funciones
 // EXP: pero en este caso requiere tantos parametros que es mejor solo pasarle la estructura entera
 int retrieve_mail(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
-    unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
 
-    if(!check_mail(&client_data->write_buffer, &client_data->mail_info, mail_num)) {
-        printf("doesnt exist\n");
+    unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
+    user_mail_info * mail_info = &client_data->mail_info;
+
+     if(!VALID_MAIL(mail_num, mail_info)){
+        handle_invalid_mail(&client_data->write_buffer);
         return true;
     }
-    
+
     if(client_data->mail_info.filed_fd == 0) {
         char * file_name;
         int user_base_len = user_file_name(&file_name, client_data->username);
@@ -311,7 +323,7 @@ int retrieve_mail(struct selector_key *key) {
             // TODO: handle error
             return true;
         }
-        sprintf(file_name + user_base_len,"%s", client_data->mail_info.mails[mail_num - 1].name);
+        sprintf(file_name + user_base_len, "%s", client_data->mail_info.mails[mail_num - 1].name);
 
         FILE * file = fopen(file_name,"r");
         if(file == NULL){
@@ -320,6 +332,7 @@ int retrieve_mail(struct selector_key *key) {
             return true;
         }
 
+        // EXP: libero el nombre del archivo completo ya que no lo necesito. 
         free(file_name);
 
         int file_fd = fileno(file);
