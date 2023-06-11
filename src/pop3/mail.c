@@ -8,15 +8,22 @@
 
 static unsigned long check_mail(buffer * write_buffer, user_mail_info * mail_info, unsigned long mail_num);
 
-unsigned int initialize_mails(user_mail_info * mail_info, char * username){
-
+int user_file_name(char ** file_name, char * username){
     // EXP: generamos un string que tenga como base el directorio del usuario
     size_t dir_base_len = sizeof(DIR_BASE);
-    char * file_name = malloc(dir_base_len + 2 * MAX_NAME_SIZE + 2);   // Tenemos en cuenta el nombre del directorio del usuario y el nombre del archivo
+    *file_name = calloc(dir_base_len + 2 * MAX_NAME_SIZE + 2, sizeof(char));   // Tenemos en cuenta el nombre del directorio del usuario y el nombre del archivo
     if(file_name == NULL){
         return ERROR_ALLOC;
     }
-    int user_base_len = snprintf(file_name, dir_base_len + 2 * MAX_NAME_SIZE + 2, "%s/%s/", DIR_BASE, username);
+    int user_base_len = snprintf(*file_name, dir_base_len + 2 * MAX_NAME_SIZE + 2, "%s/%s/", DIR_BASE, username);
+
+    return user_base_len;
+}
+
+unsigned int initialize_mails(user_mail_info * mail_info, char * username){
+
+    char * file_name;
+    int user_base_len = user_file_name(&file_name, username);
 
     // EXP: abrimos el directorio
     DIR * dir = opendir(file_name);
@@ -36,7 +43,7 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username){
 
             // EXP: copio el nombre del file
             size_t len = strlen(dir_info->d_name);
-            char * pos = malloc(len + 1);
+            char * pos = calloc(len + 1, sizeof(char));
             if(pos == NULL){
                 return ERROR_ALLOC;
             }
@@ -108,6 +115,9 @@ unsigned int num_string_size(size_t num){
     }
     return i;
 }
+
+// TODO: importante ver si podemos hacer esto de otra forma
+
 #define LIST_LINE_LEN(i, octets) (num_string_size(i) + num_string_size(octets) + 3)
 #define FIRST_LINE_LIST_LEN(count, octets)  (num_string_size(count) + num_string_size(octets) + 25)
 
@@ -210,7 +220,151 @@ static unsigned long check_mail(buffer * write_buffer, user_mail_info * mail_inf
         size_t len = strlen(msg);
 
         buffer_write_n(write_buffer, msg, len);
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
+}
+
+
+
+// = = = = = = =<   RETR   >= = = = = = = 
+
+#define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
+
+void mail_read_handler(struct selector_key *key){
+    user_mail_info * mail_info = ATTACHMENT_MAIL(key);
+
+    if(!buffer_can_write(&mail_info->retrive_buffer)){
+        return;
+    }
+    size_t read_max;   
+    uint8_t * buffer = buffer_write_ptr(&mail_info->retrive_buffer, &read_max);
+
+    // EXP: me muevo hasta donde puede leer la ultima vez asi continuo desde ahi
+    off_t seek = lseek(mail_info->filed_fd, mail_info->bytes_read, SEEK_SET);
+
+    if(seek == -1){
+        printf("Error lseek\n");
+        mail_info->finished_reading = true;
+        selector_unregister_fd(key->s, mail_info->filed_fd);
+        // TODO: handle error
+        return;
+    }
+
+    ssize_t recieved_count = read(mail_info->filed_fd, buffer, read_max);
+
+    if(recieved_count == -1) {
+        printf("Error read. ERRNO: %d\n", errno);
+        mail_info->finished_reading = true;
+        selector_unregister_fd(key->s, mail_info->filed_fd);
+        // TODO: handle error
+        return;
+    }
+
+    // EXP: llegue al final del archivo, marco como si termine.
+    if(recieved_count == 0) {
+        mail_info->finished_reading = true;
+        selector_unregister_fd(key->s, mail_info->filed_fd);
+    }
+
+
+    buffer_write_adv(&mail_info->retrive_buffer, recieved_count);
+    mail_info->bytes_read += recieved_count;
+}
+
+static const struct fd_handler mail_handlers ={
+    .handle_read = &mail_read_handler,
+    .handle_write = NULL,
+    .handle_close = NULL,
+    .handle_block = NULL,
+};
+
+// EXP: por lo general intentamos pasarlo lo minimo indespensable a las funciones
+// EXP: pero en este caso requiere tantos parametros que es mejor solo pasarle la estructura entera
+int retrieve_mail(client_connection_data * client_data) {
+    unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
+
+    if(!check_mail(&client_data->write_buffer, &client_data->mail_info, mail_num)) {
+        printf("doesnt exist\n");
+        return true;
+    }
+    
+    if(client_data->mail_info.filed_fd == 0) {
+        char * file_name;
+        int user_base_len = user_file_name(&file_name, client_data->username);
+
+        if(user_base_len == ERROR_ALLOC){
+            printf("Error user_file_name\n");
+            // TODO: handle error
+            return true;
+        }
+        sprintf(file_name + user_base_len,"%s", client_data->mail_info.mails[mail_num - 1].name);
+
+        printf("%s\n",file_name);
+
+
+        FILE * file = fopen(file_name,"r");
+        if(file == NULL){
+            printf("Error fopen, errno:%d\n",errno);
+            // TODO: handle error
+            return true;
+        }
+
+        free(file_name);
+
+        int file_fd = fileno(file);
+        if(file_fd == -1){
+            printf("Error fileno\n");
+            // TODO: handle error
+            return true;
+        }
+
+        client_data->mail_info.filed_fd = file_fd;
+        client_data->mail_info.bytes_read = 0;
+
+        if(selector_register(client_data->key->s, file_fd, &mail_handlers, OP_READ, &client_data->mail_info) != SELECTOR_SUCCESS){
+            printf("Error registering selector to read file\n");
+            // TODO: handle error
+            return true;
+        }
+
+        // EXP: no termine, tengo que seguir probando (?)
+        return false;
+    }
+
+    if(buffer_can_read(&client_data->mail_info.retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
+        size_t read_max;   
+        uint8_t * read_buffer = buffer_read_ptr(&client_data->mail_info.retrive_buffer, &read_max);
+
+        size_t write_max;   
+        uint8_t * write_buffer = buffer_write_ptr(&client_data->write_buffer, &write_max);
+
+        // TODO: byte stuffing (!!!!)
+
+        size_t min = write_max > read_max ? read_max : write_max;
+
+        memcpy(write_buffer, read_buffer, min);
+
+        buffer_read_adv(&client_data->mail_info.retrive_buffer, min);
+        buffer_write_adv(&client_data->write_buffer, min);
+        client_data->command.bytes_written += min;
+
+    }
+
+    // TODO: "apagar" el fd de lectura del archivo si no puedo escribir en el buffer de salida del cliente, para no gastar recursos.
+
+    if(client_data->mail_info.finished_reading){
+
+        // fclose(file); // TODO: tengo que cerrar el archivo y el fd o puedo hacer solo uno (?)
+        close(client_data->mail_info.filed_fd);
+
+        client_data->mail_info.filed_fd = 0;
+        client_data->mail_info.bytes_read = 0;
+        client_data->mail_info.finished_reading = 0;
+
+        return true;
+    }
+
+
+    return false;
 }

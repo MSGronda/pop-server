@@ -72,6 +72,8 @@ typedef struct client_connection_data{
 
     user_mail_info mail_info;                   // informacion sobre los mails en la casilla del usuario
 
+    struct selector_key *key;                   // TODO: check this. recursion and bad style.
+
     client_connection_data * next;              // proximo cliente en la lista de clientes
 }client_connection_data;
 

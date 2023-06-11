@@ -67,6 +67,9 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     buffer_init(&new_connection->read_buffer, BUFFER_SIZE, new_connection->read_addr);
     buffer_init(&new_connection->write_buffer, BUFFER_SIZE, new_connection->write_addr);
 
+    // inicializo el buffer para leer mails
+    buffer_init(&new_connection->mail_info.retrive_buffer, RETRIEVE_BUFFER_SIZE, new_connection->mail_info.retrive_addr);
+
     //  = = = = = MENSAJE INICIAL = = = = = 
     // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
     char * hello_msg = "+OK pop3-server ready\r\n";
@@ -88,6 +91,13 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     new_connection->command.finished = 1;
     new_connection->command.bytes_written = 0;
     new_connection->command.command_num = CMD_NOT_RECOGNIZED;
+
+
+    // = = = = = INICIALIZO DE LECTURA DE MAILS = = = = = 
+
+    new_connection->mail_info.bytes_read = 0;
+    new_connection->mail_info.filed_fd = 0;
+    new_connection->mail_info.finished_reading = 0;
 
     return new_connection;
 }
@@ -235,10 +245,13 @@ void pop3_passive_handler(struct selector_key *key) {
 
     // EXP: hago el setup de toda la informacion del cliente: address, fd, buffers, maquina de estados, etc
     client_connection_data * new_client = setup_new_connection(client_fd, client_address);
-    
+
     if(new_client == NULL) {
         ERROR_CATCH("Error generating client connection data", finally)
     }
+
+    // TODO: !!!!!!!!!!!!!!!!!!! REMOVE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    new_client->key = key;
 
     // EXP: configuro todos los handlers para los distintos casos: read, write, close, block
     // EXP: lo registramos como OP_WRITE ya que queremos primero mandar el "+OK server ready" antes de recibir comandos

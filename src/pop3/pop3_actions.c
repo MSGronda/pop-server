@@ -187,8 +187,7 @@ int pop3_list(client_connection_data * client_data) {
 }
 
 int pop3_retr(client_connection_data * client_data) {
-     char * dirname = "";                                   // TODO: que no sea constante esto!!
-     return true;
+     return retrieve_mail(client_data);
 }
 
 
