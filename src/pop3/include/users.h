@@ -16,8 +16,10 @@ typedef enum {
 } user_status;
 
 
+char * get_maildir();
+
 // Load users to system
-void load_users( users_data users_array[], size_t amount_users);
+void load_users( users_data users_array[], size_t amount_users, char * maildir_path);
 
 // Login a user
 user_status login_user(const char * username, const char * password);

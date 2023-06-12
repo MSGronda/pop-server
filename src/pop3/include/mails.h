@@ -48,12 +48,12 @@ typedef struct user_mail_info{
 
 #include "./pop3.h"     // TODO: check
 
-unsigned int initialize_mails(user_mail_info * mail_info, char * username);
+unsigned int initialize_mails(user_mail_info * mail_info, char * username, char * maildir_path);
 int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_command * command);
 int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * mail_num);
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info);
 void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg);
 void restore_mail(buffer * write_buffer, user_mail_info * mail_info);
-int retrieve_mail(struct selector_key *key);
+int retrieve_mail(struct selector_key *key, char * maildir);
 void free_mail_info(struct selector_key *key);
 #endif

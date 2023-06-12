@@ -8,6 +8,7 @@
 typedef struct {
     char *name;
     char *pass;
+    char *maildir_path;
     bool sessionActive;
 }users_data;
 

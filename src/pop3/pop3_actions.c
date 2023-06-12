@@ -166,7 +166,9 @@ int pop3_pass(struct selector_key *key){
           user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
           if (!status) {
-               unsigned int resp = initialize_mails(&client_data->mail_info, client_data->username);
+               char * maildir = get_maildir();
+               printf("maildir = %s\n\n",maildir);
+               unsigned int resp = initialize_mails(&client_data->mail_info, client_data->username, maildir);
 
                if(resp != MAILS_SUCCESS) {
                     // TODO: handle error. Quizas cerrar conexion.
@@ -201,7 +203,8 @@ int pop3_list(struct selector_key *key) {
 }
 
 int pop3_retr(struct selector_key *key) {
-     return retrieve_mail(key);
+     char * maildir = get_maildir();
+     return retrieve_mail(key, maildir);
 }
 
 

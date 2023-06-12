@@ -3,13 +3,19 @@
 
 // all users stored in system
 static users_data * users;
-static int users_count; 
+static int users_count;
+static char * maildir;
 
 
 
-void load_users( users_data users_array[], size_t amount_users) {
+void load_users( users_data users_array[], size_t amount_users, char * maildir_path) {
     users = users_array;
     users_count = amount_users;
+    maildir = maildir_path;
+}
+
+char * get_maildir() {
+    return maildir;
 }
 
 void skip_line(FILE * file) {

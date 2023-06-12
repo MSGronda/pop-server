@@ -90,7 +90,8 @@ int main(int argc, char * argv[]) {
     }
 
     // = = = = = = CARGA DE USUARIOS = = = = = = = = =
-    load_users(pop3_server_state.users, pop3_server_state.amount_users);
+
+    load_users(pop3_server_state.users, pop3_server_state.amount_users, pop3_server_state.folder_address);
     
     // EXP: loop infinito
     while(server_running) {

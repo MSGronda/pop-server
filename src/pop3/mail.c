@@ -35,14 +35,14 @@ void handle_invalid_mail(buffer * write_buffer){
     buffer_write_n(write_buffer, msg, len);
 }
 
-int user_file_name(char ** file_name, char * username){
+int user_file_name(char ** file_name, char * username, char * maildir){
     // EXP: generamos un string que tenga como base el directorio del usuario
-    size_t dir_base_len = sizeof(DIR_BASE);
+    size_t dir_base_len = sizeof(maildir);
     *file_name = calloc(dir_base_len + 2 * MAX_NAME_SIZE + 2, sizeof(char));   // Tenemos en cuenta el nombre del directorio del usuario y el nombre del archivo
     if(file_name == NULL){
         return ERROR_ALLOC;
     }
-    int user_base_len = snprintf(*file_name, dir_base_len + 2 * MAX_NAME_SIZE + 2, "%s/%s/", DIR_BASE, username);
+    int user_base_len = snprintf(*file_name, dir_base_len + 2 * MAX_NAME_SIZE + 2, "%s/%s/", maildir, username);
 
     return user_base_len;
 }
@@ -71,11 +71,11 @@ unsigned int num_string_size(size_t num){
 
 // = = = = = = =<   INICIALIZACION Y DESTRUCCION  >= = = = = = = 
 
-unsigned int initialize_mails(user_mail_info * mail_info, char * username){
+unsigned int initialize_mails(user_mail_info * mail_info, char * username, char * maildir){
 
     char * file_name;
-    int user_base_len = user_file_name(&file_name, username);
-
+    int user_base_len = user_file_name(&file_name, username, maildir);
+    printf("en initialize = %s\n\n", file_name);
     // EXP: abrimos el directorio
     DIR * dir = opendir(file_name);
     if(dir == NULL){
@@ -300,11 +300,11 @@ error:
 }
 
 
-int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char ** error_msg){
+int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char ** error_msg, char * maildir){
     client_connection_data * client_data = ATTACHMENT(key);
 
     char * file_name;
-    int user_base_len = user_file_name(&file_name, client_data->username);
+    int user_base_len = user_file_name(&file_name, client_data->username, maildir);
 
     if(user_base_len == ERROR_ALLOC){
         *error_msg = "Error allocating for mail file name.";
@@ -373,7 +373,7 @@ void finish_mail_retrieval(user_mail_info * mail_info){
 
 // EXP: por lo general intentamos pasarlo lo minimo indespensable a las funciones
 // EXP: pero en este caso requiere tantos parametros que es mejor solo pasarle la estructura entera
-int retrieve_mail(struct selector_key *key) {
+int retrieve_mail(struct selector_key *key, char * maildir) {
     char * error_msg;
     client_connection_data * client_data = ATTACHMENT(key);
 
@@ -394,7 +394,7 @@ int retrieve_mail(struct selector_key *key) {
 
     // EXP: abro el archivo y me suscribo a la lectura. solo se hace 1 vez
     if(client_data->mail_info.filed_fd == 0) {
-        int setup_success = setup_mail_retrieval(key, mail_num, &error_msg);
+        int setup_success = setup_mail_retrieval(key, mail_num, &error_msg, maildir);
 
         if(!setup_success){
             goto error;
