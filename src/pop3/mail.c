@@ -22,8 +22,13 @@ static const struct fd_handler mail_handlers ={
 
 #define VALID_MAIL(mail_num, mail_info) (mail_num != ULONG_MAX && mail_num != 0  && mail_info->mail_count >= mail_num  && mail_info->mails[mail_num - 1].state != 0)
 #define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
+#define LIST_LINE_LEN(i, octets) (num_string_size(i) + num_string_size(octets) + 3)
+#define FIRST_LINE_LIST_LEN(count, octets)  (num_string_size(count) + num_string_size(octets) + 25)
+#define CAN_WRITE_LIST_LINE(i, octets, maxlen) (LIST_LINE_LEN(i, octets) + 3 < maxlen)
 
 void handle_invalid_mail(buffer * write_buffer){
+
+    // EXP: no se revela mas informacion de la que se deberia
     char * msg = "-ERR no such message\r\n";
     size_t len = strlen(msg);
 
@@ -157,16 +162,6 @@ int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
     return true;
 }
 
-// TODO: importante ver si podemos hacer esto de otra forma
-
-#define LIST_LINE_LEN(i, octets) (num_string_size(i) + num_string_size(octets) + 3)
-#define FIRST_LINE_LIST_LEN(count, octets)  (num_string_size(count) + num_string_size(octets) + 25)
-
-bool can_write_list_line(unsigned int i, size_t octets, size_t max_len){
-    // EXP: el 3 es el espacio, el \r y el \n
-    return LIST_LINE_LEN(i, octets) + 3 < max_len;
-}
-
 int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_command * command){
     // EXP: chequeamos si podemos escribir una linea entera del comando list. EJ: 3 430
     // EXP: nos manejamos por lineas enteras para facilitar la logica.
@@ -182,6 +177,7 @@ int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_comman
 
 
     // EXP: voy hasta donde llegue anteriormente
+    // EXP: se hizo de esta forma para no tener que guardar en el estado del usuario algo especifico del este comando
     unsigned int i=0;
     size_t previous_sent = FIRST_LINE_LIST_LEN(mail_info->current_count, mail_info->total_octets);      // EXP: empezandos contando despues de la primera linea 
     while(previous_sent < command->bytes_written  && i < mail_info->mail_count) {
@@ -198,7 +194,7 @@ int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_comman
             uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
 
             // EXP: me quede sin espacio, marco como si no termine    
-            if(!can_write_list_line(i,mail_info->mails[i].octets, max_len)){
+            if(!CAN_WRITE_LIST_LINE(i, mail_info->mails[i].octets, max_len)){
                 return false;
             }
 
@@ -389,7 +385,14 @@ int retrieve_mail(struct selector_key *key) {
         return true;
     }
 
-    // EXP: todavia no abri el archivo ni me suscribi a la lectura
+    // EXP: escribimos la pimera linea (que se considera single line)
+    if(client_data->command.bytes_written == 0 && client_data->mail_info.filed_fd == 0){
+        char * ini_msg = "+OK message follows\r\n";
+        size_t ini_msg_len = strlen(ini_msg);
+        buffer_write_n(&client_data->write_buffer, ini_msg, ini_msg_len);
+    }
+
+    // EXP: abro el archivo y me suscribo a la lectura. solo se hace 1 vez
     if(client_data->mail_info.filed_fd == 0) {
         int setup_success = setup_mail_retrieval(key, mail_num, &error_msg);
 
@@ -400,6 +403,7 @@ int retrieve_mail(struct selector_key *key) {
         // EXP: no termine, tengo que seguir probando (?)
         return false;
     }
+
 
     if(buffer_can_read(&client_data->mail_info.retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
         transfer_bytes(&client_data->mail_info.retrive_buffer, &client_data->write_buffer, &client_data->command.bytes_written);
@@ -413,8 +417,6 @@ int retrieve_mail(struct selector_key *key) {
     }
 
     return false;
-
-
 error:
     // TODO: log error
     printf("%s\n", error_msg);
