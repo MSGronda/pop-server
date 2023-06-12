@@ -5,6 +5,7 @@
 #include "../utils/include/buffer.h"
 #include "../pop3/include/pop3.h"
 #include "../pop3/include/users.h"
+#include "../utils/include/logger.h"
 #include "common.h"
 #include "args.h"
 
