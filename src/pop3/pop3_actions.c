@@ -218,28 +218,27 @@ int pop3_stat(struct selector_key *key) {
 
 int pop3_quit(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
-     char * msg = "goodbye!\r\n";
-
-     for(int i=0; msg[i]!=0; i++) {
-          buffer_write(&client_data->write_buffer, msg[i]);
-     }
-     client_data->state = UPDATE;
-     char * maildir = get_maildir();
-     char * user_maildir;
-     int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);
-     for(size_t i = 0; i < client_data->mail_info.mail_count ; i++) {
-          if(client_data->mail_info.mails[i].state == 0) {
-               //formar el string del directory (appendear /user a maildir) y despues appendear /file_name
-               char * to_delete = malloc(user_base_len+strlen(client_data->mail_info.mails[i].name)+1);
-               if(to_delete == NULL) {
-                    return false;
-               }
-               strcpy(to_delete, user_maildir);
-               strcat(to_delete, client_data->mail_info.mails[i].name);
-               remove(to_delete);
-               free(to_delete);
+     char * msg = "+OK goodbye!\r\n";
+     if(client_data->state == TRANSACTION) {
+          // entering update state to delete mails
+          char * maildir = get_maildir();
+          char * user_maildir;
+          int err = 0;
+          int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);
+          for(size_t i = 0; i < client_data->mail_info.mail_count ; i++) {
+               if(client_data->mail_info.mails[i].state == 0) {
+                    strcpy(user_maildir + user_base_len, client_data->mail_info.mails[i].name);
+                    int rm_state = remove(user_maildir);
+                    if(!rm_state && !err) {
+                         msg = "-ERR some messages not deleted.\r\n";
+                         err = 1;
+                    }
+               }    
           }
      }
+     int rsp_len = strlen(msg);
+     buffer_write_n(&client_data->write_buffer, msg, rsp_len);
+     client_data->state = UPDATE;
      return true;
 }
 
