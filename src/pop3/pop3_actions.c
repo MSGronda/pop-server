@@ -155,6 +155,9 @@ int pop3_user(struct selector_key *key){
      if( index != -1) {
           client_data->state = AUTH_PASSWORD;
           client_data->username = malloc(client_data->command_parser.arg_length + 1);
+          if(client_data->username == NULL) {
+               return false;
+          }
           strcpy(client_data->username, client_data->command_parser.current_command.argument);
      }
      return true;
@@ -228,6 +231,9 @@ int pop3_quit(struct selector_key *key) {
           if(client_data->mail_info.mails[i].state == 0) {
                //formar el string del directory (appendear /user a maildir) y despues appendear /file_name
                char * to_delete = malloc(user_base_len+strlen(client_data->mail_info.mails[i].name)+1);
+               if(to_delete == NULL) {
+                    return false;
+               }
                strcpy(to_delete, user_maildir);
                strcat(to_delete, client_data->mail_info.mails[i].name);
                remove(to_delete);
