@@ -75,7 +75,6 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username, char 
 
     char * file_name;
     int user_base_len = user_file_name(&file_name, username, maildir);
-    printf("en initialize = %s\n\n", file_name);
     // EXP: abrimos el directorio
     DIR * dir = opendir(file_name);
     if(dir == NULL){

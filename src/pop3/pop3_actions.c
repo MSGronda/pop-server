@@ -167,7 +167,6 @@ int pop3_pass(struct selector_key *key){
 
           if (!status) {
                char * maildir = get_maildir();
-               printf("maildir = %s\n\n",maildir);
                unsigned int resp = initialize_mails(&client_data->mail_info, client_data->username, maildir);
 
                if(resp != MAILS_SUCCESS) {
@@ -216,10 +215,24 @@ int pop3_stat(struct selector_key *key) {
 
 int pop3_quit(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
-     char * msg = "QUIT\r\n";
+     char * msg = "goodbye!\r\n";
 
      for(int i=0; msg[i]!=0; i++) {
           buffer_write(&client_data->write_buffer, msg[i]);
+     }
+     client_data->state = UPDATE;
+     char * maildir = get_maildir();
+     char * user_maildir;
+     int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);
+     for(size_t i = 0; i < client_data->mail_info.mail_count ; i++) {
+          if(client_data->mail_info.mails[i].state == 0) {
+               //formar el string del directory (appendear /user a maildir) y despues appendear /file_name
+               char * to_delete = malloc(user_base_len+strlen(client_data->mail_info.mails[i].name)+1);
+               strcpy(to_delete, user_maildir);
+               strcat(to_delete, client_data->mail_info.mails[i].name);
+               remove(to_delete);
+               free(to_delete);
+          }
      }
      return true;
 }
