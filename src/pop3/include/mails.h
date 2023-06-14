@@ -9,11 +9,13 @@
 #include <limits.h>
 #include <unistd.h>
 
-
+#include "./pop3_structures.h"
 
 #include "../../utils/include/buffer.h"
 #include "../../utils/include/selector.h"
 #include "../../include/common.h"
+
+typedef struct client_connection_data client_connection_data;
 
 // = = = = = CONSTANTES = = = = = 
 
@@ -55,10 +57,8 @@ typedef struct user_mail_info{
     stuffing_parser parser;
 }user_mail_info;
 
-#include "./pop3_structures.h"
 
-
-unsigned int initialize_mails(user_mail_info * mail_info, char * username, char * maildir_path);
+unsigned int initialize_mails(client_connection_data * client_data, char * username, char * maildir);
 int list_mails(buffer * write_buffer, user_mail_info * mail_info, size_t * bytes_written);
 int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * mail_num);
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info);

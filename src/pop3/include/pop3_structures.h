@@ -1,4 +1,3 @@
-
 #ifndef POP3_STRUCTURES_H
 #define POP3_STRUCTURES_H
 
@@ -43,6 +42,8 @@ typedef struct running_command{
 }running_command;
 
 typedef struct client_connection_data client_connection_data;
+typedef struct user_mail_info user_mail_info;
+
 
 // EXP: Contiene toda informacion relevante a un cliente
 typedef struct client_connection_data{
@@ -65,7 +66,7 @@ typedef struct client_connection_data{
 
     char * username;                            // client username
 
-    user_mail_info mail_info;                   // informacion sobre los mails en la casilla del usuario
+    user_mail_info * mail_info;                   // informacion sobre los mails en la casilla del usuario
 
     client_connection_data * next;              // proximo cliente en la lista de clientes
 }client_connection_data;

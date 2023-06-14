@@ -84,7 +84,24 @@ bool write_multiline_end(buffer * write_buffer){
 
 // = = = = = = =<   INICIALIZACION Y DESTRUCCION  >= = = = = = = 
 
-unsigned int initialize_mails(user_mail_info * mail_info, char * username, char * maildir){
+unsigned int initialize_mails(client_connection_data * client_data, char * username, char * maildir){
+
+    user_mail_info * mail_info = malloc(sizeof(user_mail_info));
+    if(mail_info == NULL){
+        return ERROR_ALLOC;
+    }
+
+    client_data->mail_info = mail_info;
+
+    // inicializo el buffer para leer mails
+    buffer_init(&mail_info->retrive_buffer, RETRIEVE_BUFFER_SIZE, mail_info->retrive_addr);
+
+    // inicializo lectura de mails 
+
+    mail_info->bytes_read = 0;
+    mail_info->filed_fd = 0;
+    mail_info->finished_reading = 0;
+
 
     char * file_name;
     int user_base_len = user_file_name(&file_name, username, maildir);
@@ -151,10 +168,10 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username, char 
 void free_mail_info(struct selector_key *key){
     client_connection_data * client_data = ATTACHMENT(key);
 
-    client_data->mail_info.finished_reading = true;
-    if(client_data->mail_info.filed_fd != 0){
-        selector_unregister_fd(key->s, client_data->mail_info.filed_fd);
-        close(client_data->mail_info.filed_fd);
+    client_data->mail_info->finished_reading = true;
+    if(client_data->mail_info->filed_fd != 0){
+        selector_unregister_fd(key->s, client_data->mail_info->filed_fd);
+        close(client_data->mail_info->filed_fd);
     }
 }
 
@@ -366,7 +383,7 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
         *error_msg = "Error allocating for mail file name.";
         return false;
     }
-    sprintf(file_name + user_base_len, "%s", client_data->mail_info.mails[mail_num - 1].name);
+    sprintf(file_name + user_base_len, "%s", client_data->mail_info->mails[mail_num - 1].name);
 
     FILE * file = fopen(file_name,"r");
     if(file == NULL){
@@ -385,8 +402,8 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
         return false;
     }
 
-    client_data->mail_info.filed_fd = file_fd;
-    client_data->mail_info.bytes_read = 0;
+    client_data->mail_info->filed_fd = file_fd;
+    client_data->mail_info->bytes_read = 0;
 
 
     // EXP: me suscribo a la lectura del archivo con el mismo selector que tiene a todos los clientes 
@@ -397,7 +414,7 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
         return false;
     }
 
-    init_stuffing_parser(&client_data->mail_info.parser);
+    init_stuffing_parser(&client_data->mail_info->parser);
 
     return true;
 }
@@ -425,7 +442,7 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
     client_connection_data * client_data = ATTACHMENT(key);
 
     unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
-    user_mail_info * mail_info = &client_data->mail_info;
+    user_mail_info * mail_info = client_data->mail_info;
 
      if(!VALID_MAIL(mail_num, mail_info)){
         handle_invalid_mail(&client_data->write_buffer);
@@ -433,14 +450,14 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
     }
 
     // EXP: escribimos la pimera linea (que se considera single line)
-    if(client_data->command.bytes_written == 0 && client_data->mail_info.filed_fd == 0){
+    if(client_data->command.bytes_written == 0 && client_data->mail_info->filed_fd == 0){
         char * ini_msg = "+OK message follows\r\n";
         size_t ini_msg_len = strlen(ini_msg);
         buffer_write_n(&client_data->write_buffer, ini_msg, ini_msg_len);
     }
 
     // EXP: abro el archivo y me suscribo a la lectura. solo se hace 1 vez
-    if(client_data->mail_info.filed_fd == 0) {
+    if(client_data->mail_info->filed_fd == 0) {
         int setup_success = setup_mail_retrieval(key, mail_num, &error_msg, maildir);
 
         if(!setup_success){
@@ -452,14 +469,14 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
     }
 
 
-    if(buffer_can_read(&client_data->mail_info.retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
-        transfer_bytes(&client_data->mail_info.retrive_buffer, &client_data->write_buffer, &client_data->mail_info.parser);
+    if(buffer_can_read(&client_data->mail_info->retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
+        transfer_bytes(&client_data->mail_info->retrive_buffer, &client_data->write_buffer, &client_data->mail_info->parser);
     }
 
     // TODO: "apagar" el fd de lectura del archivo si no puedo escribir en el buffer de salida del cliente, para no gastar recursos.
 
-    if(client_data->mail_info.finished_reading){
-        return finish_mail_retrieval(&client_data->mail_info, &client_data->write_buffer);
+    if(client_data->mail_info->finished_reading){
+        return finish_mail_retrieval(client_data->mail_info, &client_data->write_buffer);
     }
 
     return false;

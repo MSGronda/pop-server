@@ -68,9 +68,6 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     buffer_init(&new_connection->read_buffer, BUFFER_SIZE, new_connection->read_addr);
     buffer_init(&new_connection->write_buffer, BUFFER_SIZE, new_connection->write_addr);
 
-    // inicializo el buffer para leer mails
-    buffer_init(&new_connection->mail_info.retrive_buffer, RETRIEVE_BUFFER_SIZE, new_connection->mail_info.retrive_addr);
-
     //  = = = = = MENSAJE INICIAL = = = = = 
     // EXP: copio el HELLO ahora y saco logica de greeting y todo eso de las actions
     char * hello_msg = "+OK pop3-server ready\r\n";
@@ -92,13 +89,6 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     new_connection->command.finished = 1;
     new_connection->command.bytes_written = 0;
     new_connection->command.command_num = CMD_NOT_RECOGNIZED;
-
-
-    // = = = = = INICIALIZO DE LECTURA DE MAILS = = = = = 
-
-    new_connection->mail_info.bytes_read = 0;
-    new_connection->mail_info.filed_fd = 0;
-    new_connection->mail_info.finished_reading = 0;
 
     log(DEBUG, "Initialized client data for client with fd: %d", new_connection->client_fd)
 

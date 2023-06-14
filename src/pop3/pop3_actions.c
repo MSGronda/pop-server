@@ -170,7 +170,7 @@ int pop3_pass(struct selector_key *key){
 
           if (!status) {
                char * maildir = get_maildir();
-               unsigned int resp = initialize_mails(&client_data->mail_info, client_data->username, maildir);
+               unsigned int resp = initialize_mails(client_data, client_data->username, maildir);
 
                if(resp == ERROR_DIR){
                     log(DEBUG, "%s", "Error loading mail data for client due to: directory error")
@@ -198,10 +198,10 @@ int pop3_pass(struct selector_key *key){
 int pop3_list(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      if(client_data->command_parser.args_count == 0){
-          return list_mails(&client_data->write_buffer, &client_data->mail_info, &client_data->command.bytes_written);
+          return list_mails(&client_data->write_buffer, client_data->mail_info, &client_data->command.bytes_written);
      }
      else{
-          return list_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
+          return list_mail(&client_data->write_buffer, client_data->mail_info, client_data->command_parser.current_command.argument);
      }
 }
 
@@ -213,7 +213,7 @@ int pop3_retr(struct selector_key *key) {
 
 int pop3_stat(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
-     stat_mailbox(&client_data->write_buffer, &client_data->mail_info);
+     stat_mailbox(&client_data->write_buffer, client_data->mail_info);
      return true;
 }
 
@@ -228,15 +228,15 @@ int pop3_quit(struct selector_key *key) {
           int err = 0;
           int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);
 
-          for(size_t i = 0; i < client_data->mail_info.mail_count ; i++) {
-               if(client_data->mail_info.mails[i].state == 0) {
+          for(size_t i = 0; i < client_data->mail_info->mail_count ; i++) {
+               if(client_data->mail_info->mails[i].state == 0) {
 
-                    strcpy(user_maildir + user_base_len, client_data->mail_info.mails[i].name);
+                    strcpy(user_maildir + user_base_len, client_data->mail_info->mails[i].name);
                     int rm_state = remove(user_maildir);
 
                     if(!rm_state && !err) {
 
-                         log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info.mails[i].name, client_data->client_fd)
+                         log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info->mails[i].name, client_data->client_fd)
 
                          msg = "-ERR some messages not deleted.\r\n";
                          err = 1;
@@ -252,13 +252,13 @@ int pop3_quit(struct selector_key *key) {
 
 int pop3_dele(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
-     delete_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);
+     delete_mail(&client_data->write_buffer, client_data->mail_info, client_data->command_parser.current_command.argument);
      return true;
 }
 
 int pop3_rset(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
-     restore_mail(&client_data->write_buffer, &client_data->mail_info);
+     restore_mail(&client_data->write_buffer, client_data->mail_info);
      return true;
 }
 
