@@ -99,8 +99,34 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     new_connection->mail_info.filed_fd = 0;
     new_connection->mail_info.finished_reading = 0;
 
+    log(DEBUG, "Initialized client data for client with fd: %d", new_connection->client_fd)
+
     return new_connection;
 }
+
+void destroy_connection_info(client_connection_data * client_data){
+
+    // EXP: desactivo flag para indicar que usuario no esta logueado
+    if( client_data->username != NULL){
+        logout_user(client_data->username);
+    }
+
+    // EXP: elimino de la lista y libero recursos
+    client_connection_data * previous = find_previous_connection(client_data);
+
+    if(previous == NULL) {
+        connection_pool = NULL;
+    }
+    else if (previous == client_data){
+        connection_pool = client_data->next;
+    }
+    else {
+        previous->next = client_data->next;
+    }
+
+    free(client_data);
+}
+
 
 bool pop3_interpret_command(client_connection_data * client_data){
 
@@ -195,35 +221,17 @@ void pop3_close_handler(struct selector_key *key) {
     client_data->active = 0;
     client_data->command.finished = true;
 
+    log(DEBUG, "Closing connection with fd: %d", client_data->client_fd)
+
     if(client_data->client_fd != -1) {
         selector_unregister_fd(key->s, client_data->client_fd);
         close(client_data->client_fd);
     }
 
-    // EXP: desactivo flag para indicar que usuario no esta logueado
-    if( client_data->username != NULL){
-        logout_user(client_data->username);
-    }
-
-    // EXP: elimino de la lista y libero recursos
-    client_connection_data * previous = find_previous_connection(client_data);
-
-    if(previous == NULL) {
-        connection_pool = NULL;
-    }
-    else if (previous == client_data){
-        connection_pool = client_data->next;
-    }
-    else {
-        previous->next = client_data->next;
-    }
-
     free_mail_info(key);
 
-    free(client_data);
+    destroy_connection_info(client_data);
 }
-
-
 
 static const struct fd_handler pop3_handlers ={
     .handle_read = &pop3_read_handler,
@@ -234,7 +242,8 @@ static const struct fd_handler pop3_handlers ={
 
 void pop3_passive_handler(struct selector_key *key) {
     char * error_msg;
-    printf("A connection has been recieved\n");     // TODO: REMOVE
+    int client_fd;
+    client_connection_data * new_client = NULL;
 
     struct sockaddr_storage client_address;
     socklen_t client_address_len = sizeof(client_address);
@@ -242,7 +251,7 @@ void pop3_passive_handler(struct selector_key *key) {
     // = = = = = CONFIGURACION DEL SOCKET DE CLIENTE = = = = = =
 
     // EXP: saco el cliente del queue y genero un socket activo 
-    const int client_fd = accept(key->fd, (struct sockaddr *)&client_address, &client_address_len);
+    client_fd = accept(key->fd, (struct sockaddr *)&client_address, &client_address_len);
 
     if(client_fd == -1) {
         ERROR_CATCH("Error accepting client connection", finally)
@@ -254,7 +263,7 @@ void pop3_passive_handler(struct selector_key *key) {
     }
 
     // EXP: hago el setup de toda la informacion del cliente: address, fd, buffers, maquina de estados, etc
-    client_connection_data * new_client = setup_new_connection(client_fd, client_address);
+    new_client = setup_new_connection(client_fd, client_address);
 
     if(new_client == NULL) {
         ERROR_CATCH("Error generating client connection data", finally)
@@ -266,9 +275,18 @@ void pop3_passive_handler(struct selector_key *key) {
         ERROR_CATCH("Error registering client socket to select", finally)
     }
     
+    log(DEBUG, "New connection recieved with fd: %d", client_fd)
+
     // TODO: setup de las stats de conexion o algo asi
     return;
 
 finally:
-    fprintf(stderr, "%s\n", error_msg);
+    log(ERROR, "%s", error_msg);
+
+    if(client_fd != -1){
+        close(client_fd);
+    }
+    if(new_client != NULL){
+        destroy_connection_info(new_client);
+    }
 }

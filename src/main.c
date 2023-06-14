@@ -14,6 +14,8 @@ int main(int argc, char * argv[]) {
     selector_status init_status;
     selector_status select_status;
 
+    setLogLevel(DEBUG);
+
     parse_args(argc, argv, &pop3_server_state);
 
     // = = = = = CONFIGURACION DEL SOCKET = = = = = =
@@ -83,7 +85,7 @@ int main(int argc, char * argv[]) {
     // EXP: le especifico que cuando un cliente intenta leer del socket pasivo, que ejecute el handler
     select_status = selector_register(selector, socket_fd, &handlers, OP_READ, NULL);
     
-    log(INFO, "%s","Passive socket created successfully\n")
+    log(INFO, "%s","Passive socket created successfully")
 
     if(select_status != SELECTOR_SUCCESS) {
         ERROR_CATCH("Error registering selector for passive socket", error_finally)
@@ -106,7 +108,7 @@ int main(int argc, char * argv[]) {
     return 0;
 
 error_finally:
-    log(ERROR,"%s\n", error_msg)
+    log(ERROR,"%s", error_msg)
 
     if(socket_fd > 0){
         close(socket_fd);
