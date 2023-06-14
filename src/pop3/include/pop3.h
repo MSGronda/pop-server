@@ -46,7 +46,7 @@ typedef enum {
     AUTH_INI,               // CAPA, USER, QUIT
     AUTH_PASSWORD,          // PASS, QUIT
     TRANSACTION,            // LIST, RETR, DELE...
-    UPDATE,                 // ---
+    CLIENT_FINISHED         // hay que cerrar la conexion 
 }pop3_state;
 
 

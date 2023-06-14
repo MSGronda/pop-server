@@ -238,7 +238,7 @@ int pop3_quit(struct selector_key *key) {
      }
      int rsp_len = strlen(msg);
      buffer_write_n(&client_data->write_buffer, msg, rsp_len);
-     client_data->state = UPDATE;
+     client_data->state = CLIENT_FINISHED;
      return true;
 }
 

@@ -175,7 +175,11 @@ void pop3_write_handler(struct selector_key *key) {
     else if(!buffer_can_read(&client_data->write_buffer)){
         // TODO: check error
         selector_set_interest_key(key, OP_READ);
-    } 
+    }
+    
+    if(client_data->state == CLIENT_FINISHED){
+        pop3_close_handler(key);
+    }
 }
 void pop3_block_handler(struct selector_key *key) {
     printf("BLOCK");                                        // TODO: make 
