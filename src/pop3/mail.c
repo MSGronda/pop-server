@@ -150,7 +150,6 @@ int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
         return true;
     }
 
-
     size_t max_len;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
         
@@ -204,6 +203,9 @@ int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_comman
             command->bytes_written += len;
         }
     }
+
+    // TODO: \r\n.\r\n    !!! FINAL !!!
+
     return true;
 }
 
@@ -254,6 +256,62 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
 
 
 // = = = = = = =<   RETR   >= = = = = = = 
+
+void init_stuffing_parser(stuffing_parser * parser){
+    parser->stuffing_postponed = false;
+    parser->prev = 0;
+    parser->second_prev = 0;
+    parser->third_prev = 0;
+}
+
+void stuffing_consume(stuffing_parser * parser, uint8_t c){
+    parser->third_prev = parser->second_prev;
+    parser->second_prev = parser->prev;
+    parser->prev = c;
+}
+
+bool needs_stuffing(stuffing_parser * parser, uint8_t c1, uint8_t c2){
+    return parser->third_prev == '\r' && parser->second_prev == '\n' && parser->prev == '.' && c1 == '\r' && c2 == '\n';
+}
+
+bool postpone_stuffing(stuffing_parser * parser, uint8_t c){
+    if(parser->stuffing_postponed){
+        // EXP: ya se postpuso anteriormente, evidentemente no hay stuffing
+        parser->stuffing_postponed = false;
+    }
+    else if(parser->third_prev == '\r' && parser->second_prev == '\n' && parser->prev == '.' && c == '\r'){
+        // EXP: falta un \n, voy a postponer el stuffing hasta que lea mas
+        parser->stuffing_postponed = true;
+    }
+    return parser->stuffing_postponed;
+}
+
+void transfer_bytes(buffer * retrive_buffer, buffer * write_buffer, stuffing_parser * parser){
+    size_t read_max, write_max;
+    uint8_t * read_addr = buffer_read_ptr(retrive_buffer, &read_max);
+    uint8_t * write_addr = buffer_write_ptr(write_buffer, &write_max);
+
+    unsigned i=0, j=0;
+    while(i < read_max && j < write_max){
+        if(i + 1 >= read_max && postpone_stuffing(parser,read_addr[i])){
+            printf("postponed\n");
+            break;
+        }
+
+        if(needs_stuffing(parser,read_addr[i], read_addr[i+1])){
+            write_addr[j++] = '.';
+            stuffing_consume(parser, read_addr[i]);
+            continue;
+        }
+        write_addr[j] = read_addr[i];
+        stuffing_consume(parser, read_addr[i]);
+        i++, j++;
+    }
+
+    buffer_read_adv(retrive_buffer, i);
+    buffer_write_adv(write_buffer, j);
+}
+
 
 void mail_read_handler(struct selector_key *key){
     char * error_msg;
@@ -340,34 +398,33 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
         return false;
     }
 
+    init_stuffing_parser(&client_data->mail_info.parser);
+
     return true;
 }
 
-void transfer_bytes(buffer * retrive_buffer, buffer * write_buffer, size_t * bytes_written){
-    size_t read_max;   
-    uint8_t * read_addr = buffer_read_ptr(retrive_buffer, &read_max);
+bool finish_mail_retrieval(user_mail_info * mail_info, buffer * write_buffer){
+    size_t write_max;
+    uint8_t * ptr = buffer_write_ptr(write_buffer, &write_max);
+    char * delimiter = "\r\n.\r\n";
+    size_t len = strlen(delimiter);
 
-    size_t write_max;   
-    uint8_t * write_addr = buffer_write_ptr(write_buffer, &write_max);
+    // EXP: solo escribimos si tenemos espacio para escribir el mensaje completo 
+    if(write_max < len){
+        return false;
+    }
+    
+    memcpy(ptr, delimiter, len);
 
-    // TODO: byte stuffing (!!!!)
+    buffer_write_adv(write_buffer, len);
 
-    size_t min = write_max > read_max ? read_max : write_max;
-
-    memcpy(write_addr, read_addr, min);
-
-    buffer_read_adv(retrive_buffer, min);
-    buffer_write_adv(write_buffer, min);
-    *bytes_written += min;
-}
-
-void finish_mail_retrieval(user_mail_info * mail_info){
     // fclose(file); // TODO: tengo que cerrar el archivo y el fd o puedo hacer solo uno (?)
     close(mail_info->filed_fd);
 
     mail_info->filed_fd = 0;
     mail_info->bytes_read = 0;
     mail_info->finished_reading = 0;
+    return true;
 }
 
 // EXP: por lo general intentamos pasarlo lo minimo indespensable a las funciones
@@ -405,14 +462,13 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
 
 
     if(buffer_can_read(&client_data->mail_info.retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
-        transfer_bytes(&client_data->mail_info.retrive_buffer, &client_data->write_buffer, &client_data->command.bytes_written);
+        transfer_bytes(&client_data->mail_info.retrive_buffer, &client_data->write_buffer, &client_data->mail_info.parser);
     }
 
     // TODO: "apagar" el fd de lectura del archivo si no puedo escribir en el buffer de salida del cliente, para no gastar recursos.
 
     if(client_data->mail_info.finished_reading){
-        finish_mail_retrieval(&client_data->mail_info);
-        return true;
+        return finish_mail_retrieval(&client_data->mail_info, &client_data->write_buffer);
     }
 
     return false;

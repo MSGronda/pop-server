@@ -33,6 +33,13 @@ typedef struct mail_data{
     int state;                          // 0 borrado 1 activo
 }mail_data;
 
+typedef struct stuffing_parser{
+    bool stuffing_postponed;
+    uint8_t prev;               // i - 1
+    uint8_t second_prev;        // i - 2
+    uint8_t third_prev;         // i - 3
+}stuffing_parser;
+
 typedef struct user_mail_info{
     mail_data mails[MAX_MAILS];  
     size_t mail_count;                  // cantidad de mails totales que tenia el usuario al hacer login
@@ -44,6 +51,7 @@ typedef struct user_mail_info{
     int filed_fd;
     size_t bytes_read;
     int finished_reading;
+    stuffing_parser parser;
 }user_mail_info;
 
 #include "./pop3.h"     // TODO: check
