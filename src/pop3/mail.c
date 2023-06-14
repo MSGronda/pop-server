@@ -4,10 +4,6 @@ void mail_read_handler(struct selector_key *key);
 
 // = = = = = = =<   CONSTANTES / VARIABLES ESTATICAS  >= = = = = = = 
 
-// TODO: change to pop3_server settings
-#define DIR_BASE "/mnt/c/Users/Mbox1/Desktop/Protos/PopServer/maildir"
-//#define DIR_BASE "/home/machi/protos/pop-server/src/pop3/maildir"
-
 #define MAX_NAME_SIZE 256
 
 static const struct fd_handler mail_handlers ={
@@ -16,7 +12,6 @@ static const struct fd_handler mail_handlers ={
     .handle_close = NULL,
     .handle_block = NULL,
 };
-
 
 // = = = = = = =<   HELPER FUNCTIONS / MACROS  >= = = = = = = 
 
@@ -270,20 +265,8 @@ void stuffing_consume(stuffing_parser * parser, uint8_t c){
     parser->prev = c;
 }
 
-bool needs_stuffing(stuffing_parser * parser, uint8_t c1, uint8_t c2){
-    return parser->third_prev == '\r' && parser->second_prev == '\n' && parser->prev == '.' && c1 == '\r' && c2 == '\n';
-}
-
-bool postpone_stuffing(stuffing_parser * parser, uint8_t c){
-    if(parser->stuffing_postponed){
-        // EXP: ya se postpuso anteriormente, evidentemente no hay stuffing
-        parser->stuffing_postponed = false;
-    }
-    else if(parser->third_prev == '\r' && parser->second_prev == '\n' && parser->prev == '.' && c == '\r'){
-        // EXP: falta un \n, voy a postponer el stuffing hasta que lea mas
-        parser->stuffing_postponed = true;
-    }
-    return parser->stuffing_postponed;
+bool needs_stuffing(stuffing_parser * parser){
+    return parser->third_prev == '\r' && parser->second_prev == '\n' && parser->prev == '.';
 }
 
 void transfer_bytes(buffer * retrive_buffer, buffer * write_buffer, stuffing_parser * parser){
@@ -293,21 +276,16 @@ void transfer_bytes(buffer * retrive_buffer, buffer * write_buffer, stuffing_par
 
     unsigned i=0, j=0;
     while(i < read_max && j < write_max){
-        if(i + 1 >= read_max && postpone_stuffing(parser,read_addr[i])){
-            printf("postponed\n");
-            break;
-        }
-
-        if(needs_stuffing(parser,read_addr[i], read_addr[i+1])){
+        if(needs_stuffing(parser)){
             write_addr[j++] = '.';
             stuffing_consume(parser, read_addr[i]);
-            continue;
         }
-        write_addr[j] = read_addr[i];
-        stuffing_consume(parser, read_addr[i]);
-        i++, j++;
+        else{
+            write_addr[j] = read_addr[i];
+            stuffing_consume(parser, read_addr[i]);
+            i++, j++;
+        }
     }
-
     buffer_read_adv(retrive_buffer, i);
     buffer_write_adv(write_buffer, j);
 }
@@ -406,7 +384,7 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
 bool finish_mail_retrieval(user_mail_info * mail_info, buffer * write_buffer){
     size_t write_max;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &write_max);
-    char * delimiter = "\r\n.\r\n";
+    char * delimiter = "\r\n.\r\n";                                 // TODO: CHECK THIS WITH JOSE
     size_t len = strlen(delimiter);
 
     // EXP: solo escribimos si tenemos espacio para escribir el mensaje completo 
