@@ -32,6 +32,7 @@ void handle_invalid_mail(buffer * write_buffer){
 
 int user_file_name(char ** file_name, char * username, char * maildir){
     // EXP: generamos un string que tenga como base el directorio del usuario
+    // EXP: este tiene suficient espacio para poder escribir el nombre del usuario dentro del string
     size_t dir_base_len = sizeof(maildir);
     *file_name = calloc(dir_base_len + 2 * MAX_NAME_SIZE + 2, sizeof(char));   // Tenemos en cuenta el nombre del directorio del usuario y el nombre del archivo
     if(file_name == NULL){
@@ -87,13 +88,20 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username, char 
 
     char * file_name;
     int user_base_len = user_file_name(&file_name, username, maildir);
-    // EXP: abrimos el directorio
+
     DIR * dir = opendir(file_name);
     if(dir == NULL){
-        printf("Error opening dir\n");
-        return ERROR_OPENDIR;
+        return ERROR_DIR;
     }
+
+    // EXP: se consider readdir como no bloqueante. 
+    errno = 0;
     struct dirent * dir_info = readdir(dir);
+
+    // EXP: readdir puede leer sin error y retornar NULL, por lo que, debemos usar errno para distinguir si es error
+    if(dir_info == NULL && errno != 0) {
+        return ERROR_DIR;
+    }
 
     struct stat file_info;
     unsigned i = 0;
@@ -128,7 +136,7 @@ unsigned int initialize_mails(user_mail_info * mail_info, char * username, char 
 
             i++;
         }
-       
+        
         dir_info = readdir(dir);
     }
     mail_info->mail_count = i;
@@ -343,8 +351,7 @@ void mail_read_handler(struct selector_key *key){
     return;
 
 error:
-    // TODO: log error
-    printf("%s\n", error_msg);
+    log(DEBUG, "%s", error_msg)
     mail_info->finished_reading = true;
     selector_unregister_fd(key->s, mail_info->filed_fd);
 }
@@ -458,8 +465,7 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
 
     return false;
 error:
-    // TODO: log error
-    printf("%s\n", error_msg);
+    log(DEBUG, "%s", error_msg)
     handle_invalid_mail(&client_data->write_buffer);
     return true;
 }

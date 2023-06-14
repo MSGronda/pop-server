@@ -172,10 +172,11 @@ int pop3_pass(struct selector_key *key){
                char * maildir = get_maildir();
                unsigned int resp = initialize_mails(&client_data->mail_info, client_data->username, maildir);
 
-               if(resp != MAILS_SUCCESS) {
-                    // TODO: handle error. Quizas cerrar conexion.
-                    printf("ERROR loading mail data\n");
-                    printf("falle en :%d\n", resp);
+               if(resp == ERROR_DIR){
+                    log(DEBUG, "%s", "Error loading mail data for client due to: directory error")
+               }
+               else if(resp != MAILS_SUCCESS) {
+                    log(DEBUG,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error" )
                }
 
                char * answer = "+OK\r\n";
@@ -219,17 +220,24 @@ int pop3_stat(struct selector_key *key) {
 int pop3_quit(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "+OK goodbye!\r\n";
+
      if(client_data->state == TRANSACTION) {
           // entering update state to delete mails
           char * maildir = get_maildir();
           char * user_maildir;
           int err = 0;
           int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);
+
           for(size_t i = 0; i < client_data->mail_info.mail_count ; i++) {
                if(client_data->mail_info.mails[i].state == 0) {
+
                     strcpy(user_maildir + user_base_len, client_data->mail_info.mails[i].name);
                     int rm_state = remove(user_maildir);
+
                     if(!rm_state && !err) {
+
+                         log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info.mails[i].name, client_data->client_fd)
+
                          msg = "-ERR some messages not deleted.\r\n";
                          err = 1;
                     }

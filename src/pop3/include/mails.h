@@ -17,10 +17,12 @@ typedef struct running_command running_command;
 
 // = = = = = CONSTANTES = = = = = 
 
-#define ERROR_OPENDIR 3
-#define ERROR_STAT 2
-#define ERROR_ALLOC 1
-#define MAILS_SUCCESS 0
+typedef enum initialize_status{
+    MAILS_SUCCESS,
+    ERROR_ALLOC,
+    ERROR_STAT,
+    ERROR_DIR
+}initialize_status;
 
 #define MAX_MAILS 100
 
