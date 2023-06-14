@@ -276,7 +276,6 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
 // = = = = = = =<   RETR   >= = = = = = = 
 
 void init_stuffing_parser(stuffing_parser * parser){
-    parser->stuffing_postponed = false;
     parser->prev = 0;
     parser->second_prev = 0;
     parser->third_prev = 0;

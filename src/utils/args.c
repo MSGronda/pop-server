@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include "./include/args.h"
+#include "../include/main.h"
 
 #define STANDARD_PORT 25565
 

@@ -36,7 +36,6 @@ typedef struct mail_data{
 }mail_data;
 
 typedef struct stuffing_parser{
-    bool stuffing_postponed;
     uint8_t prev;               // i - 1
     uint8_t second_prev;        // i - 2
     uint8_t third_prev;         // i - 3
