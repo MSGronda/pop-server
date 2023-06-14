@@ -1,3 +1,6 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+
 #include "./include/mails.h"
 
 void mail_read_handler(struct selector_key *key);
@@ -15,11 +18,11 @@ static const struct fd_handler mail_handlers ={
 
 // = = = = = = =<   HELPER FUNCTIONS / MACROS  >= = = = = = = 
 
-#define VALID_MAIL(mail_num, mail_info) (mail_num != ULONG_MAX && mail_num != 0  && mail_info->mail_count >= mail_num  && mail_info->mails[mail_num - 1].state != 0)
+#define VALID_MAIL(mail_num, mail_info) ((mail_num != ULONG_MAX) && (mail_num != 0)  && (mail_info->mail_count >= mail_num)  && (mail_info->mails[mail_num - 1].state != 0))
 #define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
 #define LIST_LINE_LEN(i, octets) (num_string_size(i) + num_string_size(octets) + 3)
 #define FIRST_LINE_LIST_LEN(count, octets)  (num_string_size(count) + num_string_size(octets) + 25)
-#define CAN_WRITE_LIST_LINE(i, octets, maxlen) (LIST_LINE_LEN(i, octets) + 3 < maxlen)
+#define CAN_WRITE_LIST_LINE(i, octets, maxlen) ((LIST_LINE_LEN(i, octets) + 3 ) < maxlen)
 
 void handle_invalid_mail(buffer * write_buffer){
 
@@ -34,8 +37,10 @@ int user_file_name(char ** file_name, char * username, char * maildir){
     // EXP: generamos un string que tenga como base el directorio del usuario
     // EXP: este tiene suficient espacio para poder escribir el nombre del usuario dentro del string
     size_t dir_base_len = sizeof(maildir);
+    if(*file_name == NULL)
+        return ERROR_ALLOC;
     *file_name = calloc(dir_base_len + 2 * MAX_NAME_SIZE + 2, sizeof(char));   // Tenemos en cuenta el nombre del directorio del usuario y el nombre del archivo
-    if(file_name == NULL){
+    if(*file_name == NULL){
         return ERROR_ALLOC;
     }
     int user_base_len = snprintf(*file_name, dir_base_len + 2 * MAX_NAME_SIZE + 2, "%s/%s/", maildir, username);

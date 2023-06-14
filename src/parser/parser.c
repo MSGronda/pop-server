@@ -1,3 +1,6 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+
 #include "./include/parser.h"
 
 static void command_recognition (input_parser * parser, char c, bool * finished, command_instance * current_command);

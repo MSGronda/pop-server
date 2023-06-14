@@ -1,3 +1,6 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+
 #include "./include/pop3.h"
 
 // = = = = = FUNCTIONS = = = = = 
@@ -55,7 +58,9 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     }
     else{
         client_connection_data * last = find_last_connection();
-        last->next = new_connection;
+        if(last != NULL) {
+            last->next = new_connection;
+        }
     }
 
     memset(new_connection, 0, sizeof(client_connection_data));
