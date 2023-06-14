@@ -180,17 +180,17 @@ int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
     return true;
 }
 
-int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_command * command){
+int list_mails(buffer * write_buffer, user_mail_info * mail_info, size_t * bytes_written){
     // EXP: chequeamos si podemos escribir una linea entera del comando list. EJ: 3 430
     // EXP: nos manejamos por lineas enteras para facilitar la logica.
 
     // EXP: la primera linea la suponemos single line (de la misma forma que en los otros comandos), al llegar el cliente con write_buffer vacio
-    if(command->bytes_written == 0){
+    if(*bytes_written == 0){
         size_t max_len;
         uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
         int length = snprintf((char *)response,  max_len,"+OK %ld messages (%ld octets)\r\n", mail_info->current_count,  mail_info->total_octets);
         buffer_write_adv(write_buffer, length);  
-        command->bytes_written += length;
+        *bytes_written += length;
     }
 
 
@@ -198,7 +198,7 @@ int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_comman
     // EXP: se hizo de esta forma para no tener que guardar en el estado del usuario algo especifico del este comando
     unsigned int i=0;
     size_t previous_sent = FIRST_LINE_LIST_LEN(mail_info->current_count, mail_info->total_octets);      // EXP: empezandos contando despues de la primera linea 
-    while(previous_sent < command->bytes_written  && i < mail_info->mail_count) {
+    while(previous_sent < *bytes_written  && i < mail_info->mail_count) {
         if(mail_info->mails[i].state != 0){
             previous_sent += LIST_LINE_LEN(i, mail_info->mails[i].octets);
         }
@@ -220,7 +220,7 @@ int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_comman
 
             buffer_write_adv(write_buffer, len);
 
-            command->bytes_written += len;
+            *bytes_written += len;
         }
     }
 

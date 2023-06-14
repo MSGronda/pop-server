@@ -1,11 +1,9 @@
 #include "include/users.h"
 
-
 // all users stored in system
 static users_data * users;
 static int users_count;
 static char * maildir;
-
 
 
 void load_users( users_data users_array[], size_t amount_users, char * maildir_path) {

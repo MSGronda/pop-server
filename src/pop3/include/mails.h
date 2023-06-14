@@ -1,10 +1,6 @@
 #ifndef MAILS_H
 #define MAILS_H
 
-
-#include "../../utils/include/buffer.h"
-#include "../../utils/include/selector.h"
-#include "../../include/common.h"
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
@@ -13,7 +9,11 @@
 #include <limits.h>
 #include <unistd.h>
 
-typedef struct running_command running_command;
+
+
+#include "../../utils/include/buffer.h"
+#include "../../utils/include/selector.h"
+#include "../../include/common.h"
 
 // = = = = = CONSTANTES = = = = = 
 
@@ -55,10 +55,11 @@ typedef struct user_mail_info{
     stuffing_parser parser;
 }user_mail_info;
 
-#include "./pop3.h"     // TODO: check
+#include "./pop3_structures.h"
+
 
 unsigned int initialize_mails(user_mail_info * mail_info, char * username, char * maildir_path);
-int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_command * command);
+int list_mails(buffer * write_buffer, user_mail_info * mail_info, size_t * bytes_written);
 int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * mail_num);
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info);
 void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg);
@@ -66,4 +67,5 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info);
 int retrieve_mail(struct selector_key *key, char * maildir);
 void free_mail_info(struct selector_key *key);
 int user_file_name(char ** file_name, char * username, char * maildir);
+
 #endif

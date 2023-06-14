@@ -1,5 +1,7 @@
 #include "./include/pop3_actions.h"
 
+// = = = =  Actions = = = =  
+
 // EXP: puntero a funcion que ejecuta la accion
 typedef int (*pop3_action)(struct selector_key *key );
 
@@ -8,10 +10,8 @@ typedef struct pop3_action_type{
      pop3_action handle;
 }pop3_action_type;
 
-// = = = =  Actions = = = =  
 
 // EXP: pasamos el selector_key (y no solo el client_data) dado que hay comandos que necesitan ese selector_key, ej: RETR
-
 int pop3_invalid_command_action(struct selector_key *key);
 int pop3_stat(struct selector_key *key);
 int pop3_user(struct selector_key *key);
@@ -198,7 +198,7 @@ int pop3_pass(struct selector_key *key){
 int pop3_list(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      if(client_data->command_parser.args_count == 0){
-          return list_mails(&client_data->write_buffer, &client_data->mail_info, &client_data->command);
+          return list_mails(&client_data->write_buffer, &client_data->mail_info, &client_data->command.bytes_written);
      }
      else{
           return list_mail(&client_data->write_buffer, &client_data->mail_info, client_data->command_parser.current_command.argument);

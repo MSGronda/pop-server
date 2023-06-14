@@ -4,8 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-#include "../../utils/include/args.h"
+
+typedef struct {
+    char * name;
+    char * pass;
+    char * maildir_path;
+    bool sessionActive;
+}users_data;
 
 
 // three types, 0 when accepts, 1 when user or pass wrong for security, 2 when something else failed
@@ -15,11 +22,10 @@ typedef enum {
     GENERAL_ERROR
 } user_status;
 
-
 char * get_maildir();
 
 // Load users to system
-void load_users( users_data * users_array, size_t amount_users, char * maildir_path);
+void load_users(users_data * users_array, size_t amount_users, char * maildir_path);
 
 // Login a user
 user_status login_user(const char * username, const char * password);
