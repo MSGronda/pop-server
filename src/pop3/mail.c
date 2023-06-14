@@ -64,6 +64,23 @@ unsigned int num_string_size(size_t num){
     return i;
 }
 
+bool write_multiline_end(buffer * write_buffer){
+    size_t write_max;
+    uint8_t * ptr = buffer_write_ptr(write_buffer, &write_max);
+    char * delimiter = "\r\n.\r\n";                                 // TODO: CHECK THIS WITH JOSE
+    size_t len = strlen(delimiter);
+
+    // EXP: solo escribimos si tenemos espacio para escribir el mensaje completo 
+    if(write_max < len){
+        return false;
+    }
+    
+    memcpy(ptr, delimiter, len);
+
+    buffer_write_adv(write_buffer, len);
+    return true;
+}
+
 // = = = = = = =<   INICIALIZACION Y DESTRUCCION  >= = = = = = = 
 
 unsigned int initialize_mails(user_mail_info * mail_info, char * username, char * maildir){
@@ -199,9 +216,7 @@ int list_mails(buffer * write_buffer, user_mail_info * mail_info, running_comman
         }
     }
 
-    // TODO: \r\n.\r\n    !!! FINAL !!!
-
-    return true;
+    return write_multiline_end(write_buffer);
 }
 
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
@@ -382,19 +397,11 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
 }
 
 bool finish_mail_retrieval(user_mail_info * mail_info, buffer * write_buffer){
-    size_t write_max;
-    uint8_t * ptr = buffer_write_ptr(write_buffer, &write_max);
-    char * delimiter = "\r\n.\r\n";                                 // TODO: CHECK THIS WITH JOSE
-    size_t len = strlen(delimiter);
+    bool write_success = write_multiline_end(write_buffer);
 
-    // EXP: solo escribimos si tenemos espacio para escribir el mensaje completo 
-    if(write_max < len){
+    if(!write_success){
         return false;
     }
-    
-    memcpy(ptr, delimiter, len);
-
-    buffer_write_adv(write_buffer, len);
 
     // fclose(file); // TODO: tengo que cerrar el archivo y el fd o puedo hacer solo uno (?)
     close(mail_info->filed_fd);
