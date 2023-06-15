@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+// = = = = = METRICAS DEL SERVIDOR POP3 = = = = = 
+
 typedef struct server_metrics{
     size_t total_connections;
     size_t current_connections;
@@ -40,5 +42,10 @@ struct pop3_server_state {
 bool initialize_server_state();
 void destroy_server_state();
 struct pop3_server_state * get_server_state();
+
+void metrics_add_connection();
+void metrics_remove_connection();
+void metrics_sent_bytes(size_t sent);
+void metrics_recieved_bytes(size_t recieved);
 
 #endif

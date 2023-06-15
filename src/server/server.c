@@ -3,6 +3,33 @@
 
 struct pop3_server_state server_state;
 
+// = = = = = = = = =  SERVER METRICS  = = = = = = = = =
+
+void init_server_metrics(){
+    server_state.metrics.total_connections = 0;
+    server_state.metrics.current_connections = 0;
+    server_state.metrics.bytes_sent = 0;
+    server_state.metrics.bytes_recieved = 0;
+}
+
+void metrics_add_connection(){
+    server_state.metrics.current_connections++;
+    server_state.metrics.total_connections++;
+}
+
+void metrics_remove_connection(){
+    server_state.metrics.current_connections--;
+}
+
+void metrics_sent_bytes(size_t sent){
+    server_state.metrics.bytes_sent += sent;
+}
+
+void metrics_recieved_bytes(size_t recieved){
+    server_state.metrics.bytes_recieved += recieved;
+}
+
+
 // = = = = = = = = =  SERVER STATE  = = = = = = = = =
 
 bool initialize_server_state(){
@@ -14,6 +41,8 @@ bool initialize_server_state(){
     if(server_state.users == NULL){
         return false;
     }
+
+    init_server_metrics();
 
     return true;
 }
@@ -28,16 +57,6 @@ struct pop3_server_state * get_server_state() {
     return &server_state;
 }
 
-void init_server_metrics(server_metrics * metrics){
-    metrics->total_connections = 0;
-    metrics->current_connections = 0;
-    metrics->bytes_sent = 0;
-    metrics->bytes_recieved = 0;
-}
-
-void update_connections(server_metrics * metrics){
-    
-}
 
 
 

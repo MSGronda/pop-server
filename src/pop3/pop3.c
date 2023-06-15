@@ -227,6 +227,8 @@ void pop3_close_handler(struct selector_key *key) {
     free_mail_info(key);
 
     destroy_connection_info(client_data);
+
+    metrics_remove_connection();
 }
 
 static const struct fd_handler pop3_handlers ={
@@ -273,7 +275,8 @@ void pop3_passive_handler(struct selector_key *key) {
     
     log(DEBUG, "New connection recieved with fd: %d", client_fd)
 
-    // TODO: setup de las stats de conexion o algo asi
+    metrics_add_connection();
+
     return;
 
 finally:

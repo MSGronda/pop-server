@@ -6,6 +6,7 @@
 
 #include "../../parser/include/parser.h"
 #include "../../utils/include/selector.h"
+#include "../../server/include/server.h"
 
 // = = = = = ESTADO DE SOCKET = = = = = 
 
