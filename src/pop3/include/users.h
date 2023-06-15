@@ -6,14 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-
-typedef struct {
-    char * name;
-    char * pass;
-    char * maildir_path;
-    bool sessionActive;
-}users_data;
-
+#include "../../pop3/include/pop3_structures.h"
 
 // three types, 0 when accepts, 1 when user or pass wrong for security, 2 when something else failed
 typedef enum {
@@ -22,18 +15,10 @@ typedef enum {
     GENERAL_ERROR
 } user_status;
 
-char * get_maildir();
-
-// Load users to system
-void load_users(users_data * users_array, size_t amount_users, char * maildir_path);
-
 // Login a user
 user_status login_user(const char * username, const char * password);
 
 user_status logout_user(const char * username);
-
-// Close user management
-int finish_users();
 
 int find_user(const char * username);
 

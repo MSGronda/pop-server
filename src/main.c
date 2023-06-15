@@ -6,9 +6,26 @@
 #define MAX_PENDING_CONNECTIONS 600
 #define SELECTOR_SIZE 1024
 
-extern struct pop3_server_state pop3_server_state;
+struct pop3_server_state server_state;
 
-static bool server_running = true;
+bool initialize_server_state(){
+    memset(&server_state, 0, sizeof(struct pop3_server_state));
+
+    server_state.running = true;
+
+    server_state.users = malloc(MAX_USERS * sizeof(users_data));
+    if(server_state.users == NULL){
+        return false;
+    }
+
+    return true;
+}
+
+void destroy_server_state(){
+    server_state.running = false;
+
+    free(server_state.users);
+}
 
 int main(int argc, char * argv[]) {
     char * error_msg;
@@ -16,10 +33,17 @@ int main(int argc, char * argv[]) {
     fd_selector selector = NULL;
     selector_status init_status;
     selector_status select_status;
+    bool server_state_initialized;
 
     setLogLevel(DEBUG);
 
-    parse_args(argc, argv, &pop3_server_state);
+    server_state_initialized = initialize_server_state();
+
+    if(server_state_initialized == false) {
+        ERROR_CATCH("Initializing server state", error_finally)
+    }
+
+    parse_args(argc, argv, &server_state);
 
     // = = = = = CONFIGURACION DEL SOCKET = = = = = =
     
@@ -40,7 +64,7 @@ int main(int argc, char * argv[]) {
 
     // EXP: seteo la informacion del socket
     address.sin6_family = AF_INET6;
-    address.sin6_port = htons(pop3_server_state.port);
+    address.sin6_port = htons(server_state.port);
     address.sin6_addr = in6addr_any;                     // any address TODO: check
 
     // EXP: bindeo el socket
@@ -96,10 +120,8 @@ int main(int argc, char * argv[]) {
 
     // = = = = = = CARGA DE USUARIOS = = = = = = = = =
 
-    load_users(pop3_server_state.users, pop3_server_state.amount_users, pop3_server_state.folder_address);
-    
     // EXP: loop infinito
-    while(server_running) {
+    while(server_state.running) {
         select_status = selector_select(selector);
         if(select_status != SELECTOR_SUCCESS) {
             ERROR_CATCH("Error executing select for passive socket", error_finally)
@@ -107,12 +129,14 @@ int main(int argc, char * argv[]) {
     }
     
     //TODO: liberar recursos de usuarios
-
     return 0;
 
 error_finally:
     log(ERROR,"%s", error_msg)
 
+    if(server_state_initialized != false){
+        destroy_server_state();
+    }
     if(socket_fd > 0){
         close(socket_fd);
     }
@@ -122,7 +146,5 @@ error_finally:
     if(init_status != SELECTOR_SUCCESS){
         selector_close();
     }
-
-    finish_users();
     return 1;
 }

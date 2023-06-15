@@ -7,12 +7,8 @@
 #include <string.h> /* memset */
 #include <errno.h>
 #include <getopt.h>
+
 #include "./include/args.h"
-#include "../include/main.h"
-
-#define STANDARD_PORT 25565
-
-struct pop3_server_state pop3_server_state;
 
 static unsigned short
 port(const char *s) {
@@ -71,7 +67,6 @@ usage(const char *progname) {
 }
 
 void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_state){
-    memset(pop3_server_state, 0, sizeof(*pop3_server_state));
 
     //seteo de variables default
     pop3_server_state->port = STANDARD_PORT;
@@ -106,7 +101,7 @@ void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_
                     fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
                     exit(1);
                 } else {
-                    user(optarg, pop3_server_state->users + nusers);
+                    user(optarg, &pop3_server_state->users[nusers]);
                     nusers++;
                     pop3_server_state->amount_users = nusers;
                 }

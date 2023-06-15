@@ -49,7 +49,7 @@ typedef struct user_mail_info{
     size_t current_count;               // cantidad de mails actuales (puede haber borrado)
     size_t total_octets;                // tamano total de todos los mails
 
-    buffer  retrive_buffer;
+    buffer retrive_buffer;
     uint8_t retrive_addr[RETRIEVE_BUFFER_SIZE];
     int filed_fd;
     size_t bytes_read;

@@ -102,7 +102,6 @@ unsigned int initialize_mails(client_connection_data * client_data, char * usern
     buffer_init(&mail_info->retrive_buffer, RETRIEVE_BUFFER_SIZE, mail_info->retrive_addr);
 
     // inicializo lectura de mails 
-
     mail_info->bytes_read = 0;
     mail_info->filed_fd = 0;
     mail_info->finished_reading = 0;
@@ -338,7 +337,7 @@ void transfer_bytes(buffer * retrive_buffer, buffer * write_buffer, stuffing_par
 void mail_read_handler(struct selector_key *key){
     char * error_msg;
     user_mail_info * mail_info = ATTACHMENT_MAIL(key);
-
+    
     if(!buffer_can_write(&mail_info->retrive_buffer)){
         return;
     }
@@ -413,7 +412,7 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
 
     // EXP: me suscribo a la lectura del archivo con el mismo selector que tiene a todos los clientes 
     // EXP: esto evita que un usuario lea un archivo enorme y bloquee al resto de los clientes (al ser un solo hilo)
-    if(selector_register(key->s, file_fd, &mail_handlers, OP_READ, &client_data->mail_info) != SELECTOR_SUCCESS){
+    if(selector_register(key->s, file_fd, &mail_handlers, OP_READ, client_data->mail_info) != SELECTOR_SUCCESS){
         close(file_fd);
         *error_msg = "Error registering to selector in RETR.";
         return false;
