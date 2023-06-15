@@ -11,12 +11,14 @@ all: $(OBJS)
 	cd utils; make all
 	cd pop3; make all
 	cd parser; make all
+	cd server; make all
 	$(CC) $(CFLAGS) $(MAIN) -I$(INCDIR) $(OBJS) -o $(TARGET)
 
 clean:
 	cd utils; make clean
 	cd pop3; make clean
 	cd parser; make clean
+	cd server; make clean
 	rm -f $(TARGET)
 
 .PHONY: all clean
