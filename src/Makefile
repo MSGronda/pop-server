@@ -3,7 +3,7 @@ TARGET = server.out
 INCDIR = ./include
 MAIN = main.c
 
-SRCDIRS = utils pop3 parser metrics
+SRCDIRS = utils pop3 parser server
 SOURCES = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
 OBJS = $(SOURCES:.c=.o)
 

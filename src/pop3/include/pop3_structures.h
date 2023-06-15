@@ -8,27 +8,6 @@
 
 #include "../../parser/include/parser.h"
 
-// = = = = = ESTADO DEL SERVIDOR POP3 = = = = = 
-
-#define MAX_USERS 20
-#define STANDARD_PORT 25565
-
-typedef struct {
-    char * name;
-    char * pass;
-    char * maildir_path;
-    bool sessionActive;
-}users_data;
-
-struct pop3_server_state {
-    bool running;
-    unsigned short port;
-    char * folder_address;
-    unsigned short mng_port;
-
-    users_data * users;
-    size_t amount_users;
-};
 
 // = = = = = ESTADO DE CLIENTE POP3 = = = = = 
 

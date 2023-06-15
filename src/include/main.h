@@ -13,7 +13,8 @@
 
 #include "./common.h"
 
-#include "../pop3/include/pop3_structures.h"
+#include "../server/include/server.h"
+
 #include "../pop3/include/pop3.h"
 #include "../pop3/include/users.h"
 

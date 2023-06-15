@@ -8,6 +8,7 @@
 #include "./mails.h"
 
 #include "../../parser/include/parser.h"
+#include "../../server/include/server.h"
 
 void pop3_action_handler(struct selector_key *key);
 void pop3_continue_action(struct selector_key *key);

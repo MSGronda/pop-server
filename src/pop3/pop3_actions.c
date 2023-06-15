@@ -3,8 +3,6 @@
 
 #include "./include/pop3_actions.h"
 
-extern struct pop3_server_state server_state;
-
 // = = = =  Actions = = = =  
 
 // EXP: puntero a funcion que ejecuta la accion
@@ -174,7 +172,7 @@ int pop3_pass(struct selector_key *key){
           user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
           if (!status) {
-               char * maildir = server_state.folder_address;
+               char * maildir = get_server_state()->folder_address;
                unsigned int resp = initialize_mails(client_data, client_data->username, maildir);
 
                if(resp == ERROR_DIR){
@@ -211,7 +209,7 @@ int pop3_list(struct selector_key *key) {
 }
 
 int pop3_retr(struct selector_key *key) {
-     char * maildir = server_state.folder_address;
+     char * maildir = get_server_state()->folder_address;
      return retrieve_mail(key, maildir);
 }
 
@@ -228,7 +226,7 @@ int pop3_quit(struct selector_key *key) {
 
      if(client_data->state == TRANSACTION) {
           // entering update state to delete mails
-          char * maildir = server_state.folder_address;
+          char * maildir = get_server_state()->folder_address;
           char * user_maildir;
           int err = 0;
           int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);

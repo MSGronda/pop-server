@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "../../pop3/include/pop3_structures.h"
+#include "../../server/include/server.h"
 
 // three types, 0 when accepts, 1 when user or pass wrong for security, 2 when something else failed
 typedef enum {
