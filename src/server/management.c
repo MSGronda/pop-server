@@ -84,7 +84,7 @@ void mng_handle_request(mng_request * request, mng_response * response){
         return;
     }
 
-    if(request->op_code > OP_NOOP){
+    if(request->op_code > MNG_NOOP){
         response->status = MNG_INVALID_OP_CODE;
         return;
     }

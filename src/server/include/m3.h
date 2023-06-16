@@ -17,20 +17,20 @@ typedef enum mng_version{
 }mng_version;
 
 typedef enum mng_opertation{
-    MNG_GET_BYTES_SENT,
-    MNG_GET_BYTES_RECIEVED,
-    MNG_GET_TOTAL_CONNECTIONS,
-    MNG_GET_CURR_CONNECTIONS,
-    MNG_ADD_USER,
-    MNG_NOOP,
+    MNG_GET_BYTES_SENT = 0,
+    MNG_GET_BYTES_RECIEVED = 1,
+    MNG_GET_TOTAL_CONNECTIONS = 2,
+    MNG_GET_CURR_CONNECTIONS = 3,
+    MNG_ADD_USER = 4,
+    MNG_NOOP = 5,
 }mng_opertation;
 
 typedef enum mng_status_code{
-    MNG_SUCCESS,
-    MNG_INVALID_VERSION,
-    MNG_INVALID_OP_CODE,
-    MNG_INVALID_TOKEN,
-    MNG_INVALID_ARGS,
+    MNG_SUCCESS = 0,
+    MNG_INVALID_VERSION = 1,
+    MNG_INVALID_OP_CODE = 2,
+    MNG_INVALID_TOKEN = 3,
+    MNG_INVALID_ARGS = 4,
 }mng_status_code;
 
 
