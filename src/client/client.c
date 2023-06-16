@@ -2,6 +2,8 @@
 
 #define BUFF_SIZE 1024
 
+static void help();
+
 
 int main() {
     int socket_fd;
@@ -26,50 +28,103 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    uint8_t buffer[BUFF_SIZE];
-    mng_request request;
-    request.version = MNG_V1;
-    request.auth_token = AUTH_TOKEN;
-    request.op_code = MNG_GET_BYTES_SENT;
-    request.request_id = 3;
-    request.length = 0;
+    char read_buffer[100];
+
+    int loop = 1;
+    int id = 0;
+
+    while(loop) {
+        int operation;
+        memset(read_buffer, 0, 100);
+        fgets(read_buffer, 100, stdin);
+
+        read_buffer[strcspn(read_buffer, "\r\n")] = 0;
+        if(strcmp(read_buffer,"help") == 0) {
+            help();
+            continue;
+        } else if(strcmp(read_buffer,"btsent") == 0) {
+            operation = 0;
+        } else if(strcmp(read_buffer,"btrec") == 0) {
+            operation = 1;
+        } else if(strcmp(read_buffer,"currusers") == 0) {
+            operation = 3;
+            continue;
+        } else if(strcmp(read_buffer,"hisusers") == 0) {
+            operation = 2;
+        } else if(strcmp(read_buffer,"adduser") == 0) {
+            operation = 4;
+            continue;
+        } else if(strcmp(read_buffer,"noop") == 0) {
+            operation = 5;
+        } else if(strcmp(read_buffer,"quit") == 0) {
+            break;
+        } else {
+            printf("Error, no matching command found\n");
+            continue;
+        }
+
+
+
+        uint8_t buffer[BUFF_SIZE];
+        mng_request request;
+        request.version = MNG_V1;
+        request.auth_token = AUTH_TOKEN;
+        request.op_code = operation;
+        request.request_id = id++;
+        request.length = 0;
+
+        size_t request_len;
+        mng_request_to_buffer(&request, buffer, &request_len);
+
+        ssize_t numBytesSent = sendto(socket_fd, buffer, request_len, 0, (struct sockaddr*)&server_address, server_address_len);
+        if (numBytesSent < 0) {
+            perror("Failed to send packet");
+            exit(EXIT_FAILURE);
+        }
+
+        // EXP: reseteo el buffer
+        memset(buffer, 0, BUFF_SIZE);
+
+        ssize_t recieved_count = recvfrom(socket_fd, buffer, BUFF_SIZE, 0, (struct sockaddr *)&server_address, &server_address_len);
+
+        if(recieved_count < 0){
+            perror("Failed to recieve packet");
+            exit(EXIT_FAILURE);
+        }
+
+        mng_response response;
+        mng_buffer_to_response(buffer, &response);
+
+        printf("version: %d\n", response.version);
+        printf("status: %d\n", response.status);
+        printf("op_code: %d\n", response.op_code);
+        printf("request_id: %d\n", response.request_id);
+        printf("length: %d\n", response.length);
+
+        if(response.op_code == MNG_GET_BYTES_SENT || response.op_code == MNG_GET_BYTES_RECIEVED ||
+        response.op_code == MNG_GET_TOTAL_CONNECTIONS || response.op_code == MNG_GET_CURR_CONNECTIONS){
+            uint32_t data = *((uint32_t *) response.data);
+            printf("data: %d\n", data);
+        }
+
+    }
     
-    // Send UDP packet
-    size_t request_len;
-    mng_request_to_buffer(&request, buffer, &request_len);
-
-    ssize_t numBytesSent = sendto(socket_fd, buffer, request_len, 0, (struct sockaddr*)&server_address, server_address_len);
-    if (numBytesSent < 0) {
-        perror("Failed to send packet");
-        exit(EXIT_FAILURE);
-    }
-
-    // EXP: reseteo el buffer
-    memset(buffer, 0, BUFF_SIZE);
-
-    ssize_t recieved_count = recvfrom(socket_fd, buffer, BUFF_SIZE, 0, (struct sockaddr *)&server_address, &server_address_len);
-
-    if(recieved_count < 0){
-        perror("Failed to recieve packet");
-        exit(EXIT_FAILURE);
-    }
-
-    mng_response response;
-    mng_buffer_to_response(buffer, &response);
-
-    printf("version: %d\n", response.version);
-    printf("status: %d\n", response.status);
-    printf("op_code: %d\n", response.op_code);
-    printf("request_id: %d\n", response.request_id);
-    printf("length: %d\n", response.length);
-
-    if(response.op_code == MNG_GET_BYTES_SENT || response.op_code == MNG_GET_BYTES_RECIEVED ||
-     response.op_code == MNG_GET_TOTAL_CONNECTIONS || response.op_code == MNG_GET_CURR_CONNECTIONS){
-        uint32_t data = *((uint32_t *) response.data);
-        printf("data: %d\n", data);
-    }
-
     close(socket_fd);
 
     return 0;
+}
+
+static void help() {
+    printf( "+-----------------------------------------+\n"
+            "|Possible commands for client admin in m3 |\n"
+            "+-----------------------------------------+\n"
+            "|help: prints help table                  |\n"
+            "|btsent: prints bytes sent                |\n"
+            "|btrec: prints bytes received             |\n"
+            "|currusers: prints amount ofcurrent users |\n"
+            "|hisusers: prints historic amount of users|\n"
+            "|adduser <user> <pass>: adds a new user   |\n"
+            "|noop: noops                              |\n"
+            "|quit: quits session                      |\n"
+            "+-----------------------------------------+\n");
 }
