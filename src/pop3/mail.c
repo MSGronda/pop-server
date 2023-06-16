@@ -18,7 +18,7 @@ static const struct fd_handler mail_handlers ={
 
 // = = = = = = =<   HELPER FUNCTIONS / MACROS  >= = = = = = = 
 
-#define VALID_MAIL(mail_num, mail_info) ((mail_num != ULONG_MAX) && (mail_num != 0)  && (mail_info->mail_count >= mail_num)  && (mail_info->mails[mail_num - 1].state != 0))
+#define VALID_MAIL(mail_num, mail_info) ( (mail_num != LONG_MAX) && (mail_num != ULONG_MAX) && (mail_num != 0)  && (mail_info->mail_count >= mail_num)  && (mail_info->mails[mail_num - 1].state != 0))
 #define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
 #define LIST_LINE_LEN(i, octets) (num_string_size(i) + num_string_size(octets) + 3)
 #define FIRST_LINE_LIST_LEN(count, octets)  (num_string_size(count) + num_string_size(octets) + 25)
@@ -106,6 +106,10 @@ unsigned int initialize_mails(client_connection_data * client_data, char * usern
     mail_info->filed_fd = 0;
     mail_info->finished_reading = 0;
     mail_info->is_dir_valid = true;
+
+    mail_info->mail_count = 0;
+    mail_info->current_count = 0;
+    mail_info->total_octets = 0;
 
     if( maildir == NULL )
         return ERROR_DIR;
