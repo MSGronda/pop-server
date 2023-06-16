@@ -39,7 +39,7 @@ typedef struct mng_request{
     uint32_t auth_token;
     uint8_t op_code;
     uint8_t request_id;
-    uint16_t length;
+    uint16_t length;                    // length de la data en bytes
     uint8_t data[MAX_DATA_LEN];
 }mng_request;
 
@@ -49,7 +49,7 @@ typedef struct mng_response{
     uint8_t status;
     uint8_t op_code;
     uint8_t request_id;
-    uint16_t length;
+    uint16_t length;                    // length de la data en bytes
     uint8_t data[MAX_DATA_LEN];
 }mng_response;
 

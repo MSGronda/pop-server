@@ -6,36 +6,36 @@
 
 // = = = = = =  ACTIONS  = = = = = =  
 
-typedef uint8_t (*mng_action)(mng_response * response, uint16_t * data_len);
+typedef uint8_t (*mng_action)(mng_response * response);
 
-uint8_t mng_get_bytes_sent(mng_response * response, uint16_t * data_len){
+uint8_t mng_get_bytes_sent(mng_response * response){
     size_t sent = get_server_state()->metrics.bytes_sent;
     memcpy(response->data, &sent, sizeof(sent));
-    *data_len = sizeof(sent);
+    response->length = sizeof(sent);
     return MNG_SUCCESS;
 }
-uint8_t mng_get_bytes_recieved(mng_response * response, uint16_t * data_len){
+uint8_t mng_get_bytes_recieved(mng_response * response){
     size_t recieved = get_server_state()->metrics.bytes_recieved;
     memcpy(response->data, &recieved, sizeof(recieved));
-    *data_len = sizeof(recieved);
+    response->length = sizeof(recieved);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_get_total_connections(mng_response * response, uint16_t * data_len){
+uint8_t mng_get_total_connections(mng_response * response){
     size_t total_connections = get_server_state()->metrics.total_connections;
     memcpy(response->data, &total_connections, sizeof(total_connections));
-    *data_len = sizeof(total_connections);
+    response->length = sizeof(total_connections);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_get_curr_connections(mng_response * response, uint16_t * data_len){
+uint8_t mng_get_curr_connections(mng_response * response){
     size_t curr_connections = get_server_state()->metrics.current_connections;
     memcpy(response->data, &curr_connections, sizeof(curr_connections));
-    *data_len = sizeof(curr_connections);
+    response->length = sizeof(curr_connections);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_add_user(mng_response * response, uint16_t * data_len){
+uint8_t mng_add_user(mng_response * response){
     // TODO
 
 
@@ -43,8 +43,8 @@ uint8_t mng_add_user(mng_response * response, uint16_t * data_len){
 }
 
 
-uint8_t mng_noop(mng_response * response, uint16_t * data_len){
-    *data_len = 0;
+uint8_t mng_noop(mng_response * response){
+    response->length = 0;
     return MNG_SUCCESS;
 }
 
@@ -92,13 +92,10 @@ void mng_handle_request(mng_request * request, mng_response * response){
     // EXP: devolvemos el mismo op_code que nos mando
     response->op_code = request->op_code;
 
-    uint16_t data_len;
-    uint8_t status =  mng_v1_actions[request->op_code](response, &data_len);
+    uint8_t status =  mng_v1_actions[request->op_code](response);
 
     // EXP: el status esta dictado por las actions
     response->status = status;
-
-    response->length = data_len;
 }
 
 void mng_passive_handler(struct selector_key *key){
