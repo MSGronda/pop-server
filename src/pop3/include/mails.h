@@ -44,6 +44,8 @@ typedef struct stuffing_parser{
 }stuffing_parser;
 
 typedef struct user_mail_info{
+    bool is_dir_valid;
+
     mail_data mails[MAX_MAILS];  
     size_t mail_count;                  // cantidad de mails totales que tenia el usuario al hacer login
     size_t current_count;               // cantidad de mails actuales (puede haber borrado)

@@ -105,7 +105,10 @@ unsigned int initialize_mails(client_connection_data * client_data, char * usern
     mail_info->bytes_read = 0;
     mail_info->filed_fd = 0;
     mail_info->finished_reading = 0;
+    mail_info->is_dir_valid = true;
 
+    if( maildir == NULL )
+        return ERROR_DIR;
 
     char * file_name;
     int user_base_len = user_file_name(&file_name, username, maildir);
@@ -171,7 +174,9 @@ unsigned int initialize_mails(client_connection_data * client_data, char * usern
 
 void free_mail_info(struct selector_key *key){
     client_connection_data * client_data = ATTACHMENT(key);
-
+    if( client_data->mail_info == NULL){
+        return;
+    }
     client_data->mail_info->finished_reading = true;
     if(client_data->mail_info->filed_fd != 0){
         selector_unregister_fd(key->s, client_data->mail_info->filed_fd);
@@ -186,7 +191,7 @@ int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
 
     unsigned long mail_num = convert_mail_num(arg);
 
-    if(!VALID_MAIL(mail_num, mail_info)){
+    if(!VALID_MAIL(mail_num, mail_info) || !mail_info->is_dir_valid){
         handle_invalid_mail(write_buffer);
         return true;
     }
@@ -204,6 +209,15 @@ int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){
 int list_mails(buffer * write_buffer, user_mail_info * mail_info, size_t * bytes_written){
     // EXP: chequeamos si podemos escribir una linea entera del comando list. EJ: 3 430
     // EXP: nos manejamos por lineas enteras para facilitar la logica.
+
+    if( !mail_info->is_dir_valid ){
+        size_t max_len;
+        uint8_t * response = buffer_write_ptr(write_buffer, &max_len);
+        int length = snprintf((char *)response,  max_len,"+OK 0 messages (0 octets)\r\n");
+        buffer_write_adv(write_buffer, length);  
+        *bytes_written += length;
+        return true;
+    }
 
     // EXP: la primera linea la suponemos single line (de la misma forma que en los otros comandos), al llegar el cliente con write_buffer vacio
     if(*bytes_written == 0){
@@ -251,8 +265,12 @@ int list_mails(buffer * write_buffer, user_mail_info * mail_info, size_t * bytes
 void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
     size_t max_len;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &max_len);
-        
-    int length = snprintf((char *)ptr, max_len, "+OK %ld %ld\r\n", mail_info->current_count, mail_info->total_octets);
+    int length;
+
+    if( !mail_info->is_dir_valid ){
+        length = snprintf((char *)ptr, max_len, "+OK 0 0\r\n");
+    }else
+        length = snprintf((char *)ptr, max_len, "+OK %ld %ld\r\n", mail_info->current_count, mail_info->total_octets);
 
     buffer_write_adv(write_buffer, length);
 }
@@ -260,8 +278,9 @@ void stat_mailbox(buffer * write_buffer, user_mail_info * mail_info) {
 void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg) {
     unsigned long mail_num = convert_mail_num(arg);
 
-    if(!VALID_MAIL(mail_num, mail_info)){
+    if(!VALID_MAIL(mail_num, mail_info) || !mail_info->is_dir_valid){
         handle_invalid_mail(write_buffer);
+        return;
     }
 
     mail_info->mails[mail_num - 1].state = 0;
@@ -276,6 +295,13 @@ void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg) 
 }   
 
 void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
+    if( !mail_info->is_dir_valid){
+         size_t max_len;
+        uint8_t * response = buffer_write_ptr(write_buffer, &max_len); 
+        int length = snprintf((char *)response, max_len, "+OK maildrop has 0 messages (0 octets)\r\n");
+        buffer_write_adv(write_buffer, length);  
+        return;
+    }
     for(unsigned i=0; i < mail_info->mail_count; i++) {
         if(mail_info->mails[i].state == 0){
             mail_info->mails[i].state = 1;
@@ -448,7 +474,7 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
     unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
     user_mail_info * mail_info = client_data->mail_info;
 
-     if(!VALID_MAIL(mail_num, mail_info)){
+     if(!VALID_MAIL(mail_num, mail_info) || !client_data->mail_info->is_dir_valid){
         handle_invalid_mail(&client_data->write_buffer);
         return true;
     }

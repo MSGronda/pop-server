@@ -176,9 +176,11 @@ int pop3_pass(struct selector_key *key){
                unsigned int resp = initialize_mails(client_data, client_data->username, maildir);
 
                if(resp == ERROR_DIR){
+                    client_data->mail_info->is_dir_valid = false;
                     log(DEBUG, "%s", "Error loading mail data for client due to: directory error")
                }
                else if(resp != MAILS_SUCCESS) {
+                    client_data->mail_info->is_dir_valid = false;
                     log(DEBUG,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error" )
                }
 
@@ -224,7 +226,7 @@ int pop3_quit(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "+OK goodbye!\r\n";
 
-     if(client_data->state == TRANSACTION) {
+     if(client_data->state == TRANSACTION && client_data->mail_info->is_dir_valid) {
           // entering update state to delete mails
           char * maildir = get_server_state()->folder_address;
           char * user_maildir;
