@@ -25,7 +25,7 @@ unsigned int socket_read(struct selector_key *key) {
         return SOCKET_DONE;
     }
 
-    metrics_recieved_bytes(recieved_count);
+    metrics_recieved_bytes((uint32_t)recieved_count);
 
     // EXP: avanzo el puntero de escritura en la libreria de buffers
     buffer_write_adv(&client_data->read_buffer, recieved_count);
@@ -46,7 +46,7 @@ unsigned int socket_write(struct selector_key *key) {
         return SOCKET_ERROR;
     }
 
-    metrics_sent_bytes(sent_count);
+    metrics_sent_bytes((uint32_t)sent_count);
 
     buffer_read_adv(&client_data->write_buffer, sent_count);
 

@@ -4,14 +4,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // = = = = = METRICAS DEL SERVIDOR POP3 = = = = = 
 
 typedef struct server_metrics{
-    size_t total_connections;
-    size_t current_connections;
-    size_t bytes_sent;
-    size_t bytes_recieved; 
+    uint32_t total_connections;
+    uint32_t current_connections;
+    uint32_t bytes_sent;
+    uint32_t bytes_recieved; 
 }server_metrics;
 
 // = = = = = ESTADO DEL SERVIDOR POP3 = = = = = 
@@ -45,7 +46,7 @@ struct pop3_server_state * get_server_state();
 
 void metrics_add_connection();
 void metrics_remove_connection();
-void metrics_sent_bytes(size_t sent);
-void metrics_recieved_bytes(size_t recieved);
+void metrics_sent_bytes(uint32_t sent);
+void metrics_recieved_bytes(uint32_t recieved);
 
 #endif

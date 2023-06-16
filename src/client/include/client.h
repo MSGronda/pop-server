@@ -8,5 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdint.h>
+#include "../../server/include/m3.h"
 
 #endif

@@ -9,27 +9,27 @@
 typedef uint8_t (*mng_action)(mng_response * response);
 
 uint8_t mng_get_bytes_sent(mng_response * response){
-    size_t sent = get_server_state()->metrics.bytes_sent;
+    uint32_t sent = get_server_state()->metrics.bytes_sent;
     memcpy(response->data, &sent, sizeof(sent));
     response->length = sizeof(sent);
     return MNG_SUCCESS;
 }
 uint8_t mng_get_bytes_recieved(mng_response * response){
-    size_t recieved = get_server_state()->metrics.bytes_recieved;
+    uint32_t recieved = get_server_state()->metrics.bytes_recieved;
     memcpy(response->data, &recieved, sizeof(recieved));
     response->length = sizeof(recieved);
     return MNG_SUCCESS;
 }
 
 uint8_t mng_get_total_connections(mng_response * response){
-    size_t total_connections = get_server_state()->metrics.total_connections;
+    uint32_t total_connections = get_server_state()->metrics.total_connections;
     memcpy(response->data, &total_connections, sizeof(total_connections));
     response->length = sizeof(total_connections);
     return MNG_SUCCESS;
 }
 
 uint8_t mng_get_curr_connections(mng_response * response){
-    size_t curr_connections = get_server_state()->metrics.current_connections;
+    uint32_t curr_connections = get_server_state()->metrics.current_connections;
     memcpy(response->data, &curr_connections, sizeof(curr_connections));
     response->length = sizeof(curr_connections);
     return MNG_SUCCESS;
@@ -110,7 +110,6 @@ void mng_passive_handler(struct selector_key *key){
     mng_response response;
     memset(read_buffer, 0, UDP_BUFFER_SIZE);
     memset(write_buffer, 0, UDP_BUFFER_SIZE);
-
 
     ssize_t recieved_count = recvfrom(key->fd, read_buffer, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_address, &client_address_len);
 

@@ -21,11 +21,11 @@ void metrics_remove_connection(){
     server_state.metrics.current_connections--;
 }
 
-void metrics_sent_bytes(size_t sent){
+void metrics_sent_bytes(uint32_t sent){
     server_state.metrics.bytes_sent += sent;
 }
 
-void metrics_recieved_bytes(size_t recieved){
+void metrics_recieved_bytes(uint32_t recieved){
     server_state.metrics.bytes_recieved += recieved;
 }
 

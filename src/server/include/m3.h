@@ -55,5 +55,6 @@ typedef struct mng_response{
 
 void mng_buffer_to_request(uint8_t * request, mng_request * converted);
 void mng_response_to_buffer(mng_response * response, uint8_t * converted, size_t * converted_len);
-
+void mng_request_to_buffer(mng_request * request, uint8_t * converted, size_t * converted_len);
+void mng_buffer_to_response(uint8_t * request, mng_response * converted);
 #endif
