@@ -66,7 +66,7 @@ int main() {
     if(response.op_code == MNG_GET_BYTES_SENT || response.op_code == MNG_GET_BYTES_RECIEVED ||
      response.op_code == MNG_GET_TOTAL_CONNECTIONS || response.op_code == MNG_GET_CURR_CONNECTIONS){
         uint32_t data = *((uint32_t *) response.data);
-        printf("data: %d\n", ntohl(data));
+        printf("data: %d\n", data);
     }
 
     close(socket_fd);
