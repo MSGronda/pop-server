@@ -13,7 +13,9 @@
 
 #include "./common.h"
 
-#include "../server/include/server.h"
+#include "../server/include/server.h" 
+#include "../server/include/management.h"
+
 
 #include "../pop3/include/pop3.h"
 #include "../pop3/include/users.h"

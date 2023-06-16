@@ -36,6 +36,7 @@ bool initialize_server_state(){
     memset(&server_state, 0, sizeof(struct pop3_server_state));
 
     server_state.running = true;
+    server_state.mng_port = 25566;      // TODO: change!!!!!!
 
     server_state.users = malloc(MAX_USERS * sizeof(users_data));
     if(server_state.users == NULL){

@@ -9,7 +9,7 @@
 
 int main(int argc, char * argv[]) {
     char * error_msg;
-    int socket_fd = 1;
+    int socket_fd = 1, mng_socket_fd = 1;
     fd_selector selector = NULL;
     selector_status init_status;
     selector_status select_status;
@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
 
     parse_args(argc, argv, server_state);
 
-    // = = = = = CONFIGURACION DEL SOCKET = = = = = =
+    // = = = = = CONFIGURACION DEL SOCKET PARA POP3 = = = = = =
     
     // EXP: usamos IPv6 directamente porque puede aceptar conexiones 
     // IPv4 y IPv6 al mismo tiempo.
@@ -85,14 +85,14 @@ int main(int argc, char * argv[]) {
         ERROR_CATCH("Error creating new selector for passive socket", error_finally)
     }
 
-    const struct fd_handler handlers = {
+    const struct fd_handler pop3_handlers = {
         .handle_read = &pop3_passive_handler,
         .handle_write = NULL,
         .handle_close = NULL,
     };
 
     // EXP: le especifico que cuando un cliente intenta leer del socket pasivo, que ejecute el handler
-    select_status = selector_register(selector, socket_fd, &handlers, OP_READ, NULL);
+    select_status = selector_register(selector, socket_fd, &pop3_handlers, OP_READ, NULL);
     
     log(INFO, "%s","Passive socket created successfully")
 
@@ -100,9 +100,55 @@ int main(int argc, char * argv[]) {
         ERROR_CATCH("Error registering selector for passive socket", error_finally)
     }
 
-    // = = = = = = CARGA DE USUARIOS = = = = = = = = =
 
-    // EXP: loop infinito
+
+    // = = = = = CONFIGURACION DEL SOCKET PARA MANAGEMENT = = = = = =
+    
+    mng_socket_fd = socket(AF_INET6, SOCK_DGRAM, 0);
+
+    if(mng_socket_fd < 0) {
+        ERROR_CATCH("Error creating passive socket", error_finally)
+    }
+
+    // EXP: Deshabilito reportar si falla
+    setsockopt(mng_socket_fd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int));
+
+    struct sockaddr_in6 mngmnt_address;
+    memset(&mngmnt_address, 0, sizeof(mngmnt_address));
+
+    // EXP: seteo la informacion del socket
+    mngmnt_address.sin6_family = AF_INET6;
+    mngmnt_address.sin6_port = htons(server_state->mng_port);
+    mngmnt_address.sin6_addr = in6addr_any;                     // any address TODO: check
+
+    // EXP: bindeo el socket
+    if (bind(mng_socket_fd, (struct sockaddr *) &mngmnt_address, sizeof(mngmnt_address)) < 0) {
+        ERROR_CATCH("Error binding passive socket", error_finally)
+    }
+    
+    // EXP: setea fd como NON_BLOCING;
+    if(selector_fd_set_nio(mng_socket_fd) == -1) {
+        ERROR_CATCH("Error setting socket for passive socket as non-blocking", error_finally)
+    }
+
+    const struct fd_handler mng_handlers = {
+        .handle_read = &mng_passive_handler,
+        .handle_write = NULL,
+        .handle_close = NULL,
+    };
+
+    // EXP: le especifico que cuando un cliente intenta leer del socket pasivo, que ejecute el handler
+    select_status = selector_register(selector, mng_socket_fd, &mng_handlers, OP_READ, NULL);
+    
+    log(INFO, "%s","Passive socket created successfully")
+
+    if(select_status != SELECTOR_SUCCESS) {
+        ERROR_CATCH("Error registering selector for passive socket", error_finally)
+    }
+
+
+    // = = = = = LOOP INFINITO = = = = = =
+    
     while(server_state->running) {
         select_status = selector_select(selector);
         if(select_status != SELECTOR_SUCCESS) {
