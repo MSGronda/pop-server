@@ -51,4 +51,7 @@ void mng_response_to_buffer(mng_response * response, uint8_t * converted, size_t
 
     // TODO: check!!!
     memcpy(converted + offset, response->data, response->length);
+    offset += response->length;
+
+    *converted_len =  offset;
 }

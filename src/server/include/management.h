@@ -5,6 +5,8 @@
 #include <stdio.h>
 
 #include "./m3.h"
+#include "./server.h"
+#include "../../utils/include/logger.h"
 
 #include "../../utils/include/selector.h"
 

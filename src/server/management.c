@@ -6,19 +6,56 @@
 
 // = = = = = =  ACTIONS  = = = = = =  
 
-typedef void (*mng_action)(mng_response * response);
+typedef uint8_t (*mng_action)(mng_response * response, uint16_t * data_len);
 
-void mng_get_bytes_sent(mng_response * response){
-    
+uint8_t mng_get_bytes_sent(mng_response * response, uint16_t * data_len){
+    size_t sent = get_server_state()->metrics.bytes_sent;
+    memcpy(response->data, &sent, sizeof(sent));
+    *data_len = sizeof(sent);
+    return MNG_SUCCESS;
 }
-void mng_get_bytes_recieved(mng_response * response){
-    
+uint8_t mng_get_bytes_recieved(mng_response * response, uint16_t * data_len){
+    size_t recieved = get_server_state()->metrics.bytes_recieved;
+    memcpy(response->data, &recieved, sizeof(recieved));
+    *data_len = sizeof(recieved);
+    return MNG_SUCCESS;
+}
+
+uint8_t mng_get_total_connections(mng_response * response, uint16_t * data_len){
+    size_t total_connections = get_server_state()->metrics.total_connections;
+    memcpy(response->data, &total_connections, sizeof(total_connections));
+    *data_len = sizeof(total_connections);
+    return MNG_SUCCESS;
+}
+
+uint8_t mng_get_curr_connections(mng_response * response, uint16_t * data_len){
+    size_t curr_connections = get_server_state()->metrics.current_connections;
+    memcpy(response->data, &curr_connections, sizeof(curr_connections));
+    *data_len = sizeof(curr_connections);
+    return MNG_SUCCESS;
+}
+
+uint8_t mng_add_user(mng_response * response, uint16_t * data_len){
+    // TODO
+
+
+    return MNG_SUCCESS;
+}
+
+
+uint8_t mng_noop(mng_response * response, uint16_t * data_len){
+    *data_len = 0;
+    return MNG_SUCCESS;
 }
 
 // WARNING: deben estar en el mismo orden que el enum
 static const mng_action mng_v1_actions[] = {
     &mng_get_bytes_sent,
     &mng_get_bytes_recieved,
+    &mng_get_total_connections,
+    &mng_get_curr_connections,
+    &mng_add_user,
+    &mng_noop
 };
 
 
@@ -52,7 +89,16 @@ void mng_handle_request(mng_request * request, mng_response * response){
         return;
     }
 
-    mng_v1_actions[request->op_code](response);
+    // EXP: devolvemos el mismo op_code que nos mando
+    response->op_code = request->op_code;
+
+    uint16_t data_len;
+    uint8_t status =  mng_v1_actions[request->op_code](response, &data_len);
+
+    // EXP: el status esta dictado por las actions
+    response->status = status;
+
+    response->length = data_len;
 }
 
 void mng_passive_handler(struct selector_key *key){
@@ -72,7 +118,7 @@ void mng_passive_handler(struct selector_key *key){
     ssize_t recieved_count = recvfrom(key->fd, read_buffer, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_address, &client_address_len);
 
     if(recieved_count < 0){
-        // TODO: handle error
+        log(DEBUG, "%s", "Error recieving data from management socket (UDP)")
         return;
     }
 
