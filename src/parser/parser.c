@@ -20,6 +20,7 @@ typedef struct command_info {
     int       max_args;
 } command_info;
 
+//EXP: Arreglo que contiene informacion necesaria de cada comando
 static const command_info all_command_info[] = {
         { .type = CMD_USER, .name = "USER", .min_args = 1, .max_args = 1,}, 
         { .type = CMD_PASS, .name = "PASS", .min_args = 1, .max_args = 1,},
@@ -42,6 +43,7 @@ void parser_init(input_parser * parser) {
     parser->is_expecting_new_arg = false;
 }
 
+//EXP: le proveen un char, decide que hacer a partir del estado del parser
 command_state parser_feed(input_parser * parser, const char c, bool * finished) {
     command_instance * current_command = &parser->current_command;
 
@@ -75,6 +77,7 @@ command_state parser_feed(input_parser * parser, const char c, bool * finished) 
     return parser->state;
 }
 
+//EXP: consume del buffer hasta que no pueda o hasta que haya terminado (leyo \r\n)
 command_state parser_consume(input_parser * parser, buffer* buffer, bool * finished, size_t * n_consumed) {
     command_state state = parser->state;
     size_t n = 0;
@@ -90,7 +93,6 @@ command_state parser_consume(input_parser * parser, buffer* buffer, bool * finis
     *n_consumed = n;
     return state;
 }
-
 
 static void handle_parsed(command_instance * current_command, input_parser * parser, bool * finished, bool not_match) {
 
@@ -115,6 +117,8 @@ static void handle_parsed(command_instance * current_command, input_parser * par
 }
 
 // modules for parser_feed's switch
+//EXP: se encarga de reconocer el comando. Si lo reconoce, setea el state en WITH_ARGS o NO_ARGS
+//EXP: en un comando valido nunca va a terminar aca. Si termina o no reconocio comando, pone estado en error
 static void command_recognition (input_parser * parser, const char c, bool * finished, command_instance * current_command) {
     if(c != '\n') {
         for(int i = 0; i < ALL_CMD_SIZE; i++) {
@@ -145,6 +149,9 @@ static void command_recognition (input_parser * parser, const char c, bool * fin
         handle_parsed(current_command, parser, finished, true);
 }
 
+//EXP: reconocio comando y sabe que puede llegar a tener argumentos
+//EXP: guarda argumento del comando
+//EXP: Si un argumento que puede no recibir argumentos, no recibe, pone state en NO_ARGS
 static void with_arguments_state (input_parser * parser, const char c, bool * finished, command_instance * current_command) {
 
     // Espacio indica que deberia venir argumento
