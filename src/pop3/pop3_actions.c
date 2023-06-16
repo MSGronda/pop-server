@@ -236,8 +236,8 @@ int pop3_quit(struct selector_key *key) {
 
                     strcpy(user_maildir + user_base_len, client_data->mail_info->mails[i].name);
                     int rm_state = remove(user_maildir);
-
-                    if(!rm_state && !err) {
+                    //rm_state is == 0 if it was correctly removed
+                    if(rm_state && !err) {
 
                          log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info->mails[i].name, client_data->client_fd)
 
