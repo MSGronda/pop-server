@@ -163,55 +163,54 @@ int pop3_capa(struct selector_key *key){
 
 int pop3_user(struct selector_key *key){
      client_connection_data * client_data = ATTACHMENT(key);
-     int index = find_user(client_data->command_parser.current_command.argument);
+
+     client_data->state = AUTH_PASSWORD;
+
+     find_user(client_data->command_parser.current_command.argument);
 
      char * answer = "+OK\r\n";
      size_t len = strlen(answer);
      buffer_write_n(&client_data->write_buffer, answer, len);
 
-     if( index != -1) {
-          client_data->state = AUTH_PASSWORD;
-          client_data->username = malloc(client_data->command_parser.arg_length + 1);
-          if(client_data->username == NULL) {
-               return false;
-          }
-          strcpy(client_data->username, client_data->command_parser.current_command.argument);
+     client_data->username = malloc(client_data->command_parser.arg_length + 1);
+     if(client_data->username == NULL) {
+         return false;
      }
+     strcpy(client_data->username, client_data->command_parser.current_command.argument);
+
      return true;
 }
 
 int pop3_pass(struct selector_key *key){
      client_connection_data * client_data = ATTACHMENT(key);
-     if (client_data->state == AUTH_PASSWORD) {
-          user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
+     user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
-          if (!status) {
-               char * maildir = get_server_state()->folder_address;
-               unsigned int resp = initialize_mails(client_data, client_data->username, maildir);
+     if (!status) {
+          char * maildir = get_server_state()->folder_address;
+          unsigned int resp = initialize_mails(client_data, client_data->username, maildir);
 
-               if(resp == ERROR_DIR){
-                    client_data->mail_info->is_dir_valid = false;
-                    log(ERROR, "%s", "Error loading mail data for client due to: directory error")
-               }
-               else if(resp != MAILS_SUCCESS) {
-                    client_data->mail_info->is_dir_valid = false;
-                    log(ERROR,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error" )
-               }
-
-               char * answer = "+OK\r\n";
-               size_t len = strlen(answer);
-               buffer_write_n(&client_data->write_buffer, answer, len);
-               client_data->state = TRANSACTION;
-
-               time_t st_time  = time(NULL);
-               struct tm tm = *localtime(&st_time);
-
-               log(INFO, "User %s logged in successfully [%d-%02d-%02d %02d:%02d:%02d]", client_data->username, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec)
-
-               return true;
+          if(resp == ERROR_DIR){
+              client_data->mail_info->is_dir_valid = false;
+               log(ERROR, "%s", "Error loading mail data for client due to: directory error")
           }
-          
+          else if(resp != MAILS_SUCCESS) {
+               client_data->mail_info->is_dir_valid = false;
+               log(ERROR,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error" )
+          }
+
+          char * answer = "+OK\r\n";
+          size_t len = strlen(answer);
+          buffer_write_n(&client_data->write_buffer, answer, len);
+          client_data->state = TRANSACTION;
+
+          time_t st_time  = time(NULL);
+          struct tm tm = *localtime(&st_time);
+
+          log(INFO, "User %s logged in successfully [%d-%02d-%02d %02d:%02d:%02d]", client_data->username, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec)
+
+          return true;
      }
+          
      send_back_to_ini(client_data);
      char * answer = "-ERR\r\n";
      size_t len = strlen(answer);
@@ -303,9 +302,7 @@ int pop3_rset(struct selector_key *key) {
 
 
 static void send_back_to_ini(client_connection_data * client_data) {
-     if (client_data->state == AUTH_PASSWORD) {
-          free(client_data->username);
-          client_data->username = NULL;
-          client_data->state = AUTH_INI;
-     }
+     free(client_data->username);
+     client_data->username = NULL;
+     client_data->state = AUTH_INI;
 }
