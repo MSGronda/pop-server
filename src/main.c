@@ -3,7 +3,7 @@
 
 #include "./include/main.h"
 
-#define MAX_PENDING_CONNECTIONS 600
+#define MAX_PENDING_CONNECTIONS 500
 #define SELECTOR_SIZE 1024
 
 

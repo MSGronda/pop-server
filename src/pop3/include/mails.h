@@ -28,7 +28,7 @@ typedef enum initialize_status{
 
 #define MAX_MAILS 100
 
-#define RETRIEVE_BUFFER_SIZE 1024
+#define RETRIEVE_BUFFER_SIZE 4096
 
 // = = = = = CORREOS DEL USUARIO = = = = = 
 typedef struct mail_data{

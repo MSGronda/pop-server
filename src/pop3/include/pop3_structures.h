@@ -11,7 +11,7 @@
 
 // = = = = = ESTADO DE CLIENTE POP3 = = = = = 
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 4096
 
 typedef enum {
     AUTH_INI,               // CAPA, USER, QUIT

@@ -36,13 +36,14 @@ void handle_invalid_mail(buffer * write_buffer){
 int user_file_name(char ** file_name, char * username, char * maildir){
     // EXP: generamos un string que tenga como base el directorio del usuario
     // EXP: este tiene suficient espacio para poder escribir el nombre del usuario dentro del string
-    size_t dir_base_len = sizeof(maildir);
-    if(*file_name == NULL)
-        return ERROR_ALLOC;
-    *file_name = calloc(dir_base_len + 2 * MAX_NAME_SIZE + 2, sizeof(char));   // Tenemos en cuenta el nombre del directorio del usuario y el nombre del archivo
+    size_t dir_base_len = strlen(maildir);
+
+    *file_name = malloc(dir_base_len + 2 * MAX_NAME_SIZE + 2);   // Tenemos en cuenta el nombre del directorio del usuario y el nombre del archivo
     if(*file_name == NULL){
-        return ERROR_ALLOC;
+        return -1;
     }
+    memset(*file_name, 0,dir_base_len + 2 * MAX_NAME_SIZE + 2);
+
     int user_base_len = snprintf(*file_name, dir_base_len + 2 * MAX_NAME_SIZE + 2, "%s/%s/", maildir, username);
 
     return user_base_len;
@@ -116,6 +117,10 @@ unsigned int initialize_mails(client_connection_data * client_data, char * usern
 
     char * file_name;
     int user_base_len = user_file_name(&file_name, username, maildir);
+
+    if(user_base_len < 0) {
+        return ERROR_ALLOC;
+    }
 
     DIR * dir = opendir(file_name);
     if(dir == NULL){
