@@ -18,7 +18,7 @@ static const struct fd_handler mail_handlers ={
 
 // = = = = = = =<   HELPER FUNCTIONS / MACROS  >= = = = = = = 
 
-#define VALID_MAIL(mail_num, mail_info) ( (mail_num != LONG_MAX) && (mail_num != ULONG_MAX) && (mail_num != 0)  && (mail_info->mail_count >= mail_num)  && (mail_info->mails[mail_num - 1].state != 0))
+#define VALID_MAIL(mail_num, mail_info) ( (mail_num != ULONG_MAX) && (mail_num != 0)  && (mail_info->mail_count >= mail_num)  && (mail_info->mails[mail_num - 1].state != 0))
 #define ATTACHMENT_MAIL(key) ((struct user_mail_info *)(key)->data)
 #define LIST_LINE_LEN(i, octets) (num_string_size(i) + num_string_size(octets) + 3)
 #define FIRST_LINE_LIST_LEN(count, octets)  (num_string_size(count) + num_string_size(octets) + 25)
@@ -52,7 +52,7 @@ int user_file_name(char ** file_name, char * username, char * maildir){
 unsigned long convert_mail_num(char * arg){
     for(int i=0; arg[i] != 0; i++){
         if(!isdigit(arg[i])){
-            return LONG_MAX;
+            return ULONG_MAX;
         }
     }
     return strtoul(arg, NULL, 10);

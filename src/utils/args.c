@@ -50,7 +50,7 @@ usage(const char *progname) {
         // "   -l <POP3 addr>   Dirección donde servirá el servidor POP3.\n"
         // "   -L <conf  addr>  Dirección donde servirá el servicio de management.\n"
         "   -p <POP3 port>   Puerto entrante conexiones POP3.\n"
-        // "   -P <conf port>   Puerto entrante conexiones configuracion.\n"
+        "   -P <conf port>   Puerto entrante conexiones configuracion.\n"
         "   -u <name>:<pass> Usuario y contraseña de usuario que puede usar el proxy. Hasta 10.\n"
         "   -f <path>        Path absoluto de la carpeta donde se encuentran los mails.\n"
         "   -v               Imprime información sobre la versión versión y termina.\n"
@@ -60,9 +60,6 @@ usage(const char *progname) {
 }
 
 void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_state){
-
-    //seteo de variables default
-    pop3_server_state->port = STANDARD_PORT;
 
     int c;
     int nusers = 0;
@@ -86,9 +83,9 @@ void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_
         case 'p':
             pop3_server_state->port = port(optarg);
             break;
-        // case 'P':
-        //     pop3_server_state->mng_port = port(optarg);
-        //     break;
+        case 'P':
+            pop3_server_state->mng_port = port(optarg);
+            break;
         case 'u':
             if(nusers >= MAX_USERS) {
                     fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
@@ -100,7 +97,6 @@ void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_
                 }
             break;
         case 'f':
-            //TODO - revisar si con esto alcanza
             pop3_server_state->folder_address = optarg;
             break;
         case 'v':

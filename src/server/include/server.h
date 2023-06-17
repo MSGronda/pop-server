@@ -18,7 +18,8 @@ typedef struct server_metrics{
 // = = = = = ESTADO DEL SERVIDOR POP3 = = = = = 
 
 #define MAX_USERS 20
-#define STANDARD_PORT 25565
+#define STANDARD_PORT 44443
+#define M3_STANDARD_PORT 55552
 
 typedef struct {
     char * name;
