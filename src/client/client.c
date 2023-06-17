@@ -9,12 +9,14 @@
 #include "../server/include/m3.h"
 #include "./include/client.h"
 #include <ctype.h>
+#include <stdbool.h>
 
 #define BUFF_SIZE 1024
 
 static void help();
 static void handle_request(int operation, char * param, int * id, int connection, int socket_fd, 
                             struct sockaddr_in server_address, struct sockaddr_in6 server_address6, socklen_t server_address_len );
+static bool parse_add_user_param( char read_buffer[], char ** param);
 
 
 int main(int argc, char * argv[]) {
@@ -96,25 +98,9 @@ int main(int argc, char * argv[]) {
         } else if(strcmp(read_buffer,"hisusers") == 0) {
             operation = MNG_GET_TOTAL_CONNECTIONS;
         } else if(strncmp(read_buffer,"adduser ", strlen("adduser ")) == 0) {
-            char * inBetween = strchr(read_buffer, ':');
-
-            if( inBetween == NULL){
-                printf("Error, invalid parameters\n");
+            bool success = parse_add_user_param(read_buffer, &param);
+            if( !success)
                 continue;
-            }
-               
-            param = read_buffer + strlen("adduser ");
-            if( isspace(*param) ){
-                printf("Error, this command doesn't ignore blanks\n");
-                continue;
-            }
-            char * aux = param;
-            while(*aux && !isspace(*aux)){
-                aux++;
-            }
-            if( *aux){
-                *aux = '\0';
-            }
             operation = MNG_ADD_USER;
         } else if(strcmp(read_buffer,"noop") == 0) {
             operation = MNG_NOOP;
@@ -260,4 +246,27 @@ static void handle_request(int operation, char * param, int * id, int connection
         uint32_t data = *((uint32_t *) response.data);
         printf("%d\n", data);
     }
+}
+
+static bool parse_add_user_param( char read_buffer[], char ** param){
+    char * inBetween = strchr(read_buffer, ':');
+
+    if( inBetween == NULL){
+        printf("Error, invalid parameters\n");
+        return false;
+    }
+        
+    *param = read_buffer + strlen("adduser ");
+    if( isspace(**param) ){
+        printf("Error, this command should have one blank space before the argument\n");
+        return false;
+    }
+    char * aux = *param;
+    while(*aux && !isspace(*aux)){
+        aux++;
+    }
+    if( *aux){
+        *aux = '\0';
+    }
+    return true;
 }
