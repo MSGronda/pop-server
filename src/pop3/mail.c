@@ -497,7 +497,6 @@ bool finish_mail_retrieval(user_mail_info * mail_info, buffer * write_buffer){
         return false;
     }
 
-    // fclose(file); // TODO: tengo que cerrar el archivo y el fd o puedo hacer solo uno (?)
     close(mail_info->filed_fd);
 
     mail_info->filed_fd = 0;
@@ -522,6 +521,9 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
 
     // EXP: escribimos la pimera linea (que se considera single line)
     if(client_data->command.bytes_written == 0 && client_data->mail_info->filed_fd == 0){
+
+        log(DEBUG, "User %s retrieving mail %d", client_data->username, 0)
+
         char * ini_msg = "+OK message follows\r\n";
         size_t ini_msg_len = strlen(ini_msg);
         buffer_write_n(&client_data->write_buffer, ini_msg, ini_msg_len);
@@ -543,8 +545,6 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
     if(buffer_can_read(&client_data->mail_info->retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
         transfer_bytes(&client_data->mail_info->retrive_buffer, &client_data->write_buffer, &client_data->mail_info->parser);
     }
-
-    // TODO: "apagar" el fd de lectura del archivo si no puedo escribir en el buffer de salida del cliente, para no gastar recursos.
 
     if(client_data->mail_info->finished_reading){
         return finish_mail_retrieval(client_data->mail_info, &client_data->write_buffer);

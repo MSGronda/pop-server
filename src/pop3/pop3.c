@@ -309,7 +309,7 @@ void pop3_passive_handler(struct selector_key *key) {
     return;
 
 finally:
-    log(ERROR, "%s", error_msg);
+    log(DEBUG, "%s", error_msg);
 
     if(client_fd != -1){
         close(client_fd);

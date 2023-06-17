@@ -13,6 +13,8 @@
 
 #include "./include/pop3_actions.h"
 
+#include "../utils/include/logger.h"
+
 // = = = =  Actions = = = =  
 
 // EXP: puntero a funcion que ejecuta la accion
@@ -92,7 +94,7 @@ void pop3_action_handler(struct selector_key *key) {
                case TRANSACTION:
                     action = find_action(command, transaction_actions, sizeof(transaction_actions)/sizeof(pop3_action_type));
                     break;
-               default:                      // TODO: error?
+               default:
                     action = &pop3_invalid_command_action;
                     break;
           }
@@ -199,6 +201,8 @@ int pop3_pass(struct selector_key *key){
                buffer_write_n(&client_data->write_buffer, answer, len);
                client_data->state = TRANSACTION;
 
+               log(INFO, "User %s logged in successfully", client_data->username)
+
                return true;
           }
           
@@ -250,6 +254,9 @@ int pop3_quit(struct selector_key *key) {
                          strcpy(user_maildir + user_base_len, client_data->mail_info->mails[i].name);
                          int rm_state = remove(user_maildir);
                          //rm_state is == 0 if it was correctly removed
+
+                         log(DEBUG, "User %s deleted mail %s", client_data->username, user_maildir)
+
                          if(rm_state && !err) {
                               log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info->mails[i].name, client_data->client_fd)
                               msg = "-ERR some messages not deleted.\r\n";
@@ -265,7 +272,7 @@ int pop3_quit(struct selector_key *key) {
           }
      }
 
-
+     log(INFO, "User %s logging off", client_data->username)
 
      int rsp_len = strlen(msg);
      buffer_write_n(&client_data->write_buffer, msg, rsp_len);

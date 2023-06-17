@@ -9,6 +9,8 @@
 
 #include "./include/socket_io_actions.h"
 
+#include "../utils/include/logger.h"
+
 // = = = = = SOCKET I/O = = = = = 
 
 unsigned int socket_read(struct selector_key *key) {
@@ -31,6 +33,8 @@ unsigned int socket_read(struct selector_key *key) {
         return SOCKET_DONE;
     }
 
+    log(DEBUG, "Recieved %ld bytes from client with fd: %d", recieved_count, client_data->client_fd)
+
     metrics_recieved_bytes((uint32_t)recieved_count);
 
     // EXP: avanzo el puntero de escritura en la libreria de buffers
@@ -51,6 +55,8 @@ unsigned int socket_write(struct selector_key *key) {
     if(sent_count == -1){
         return SOCKET_ERROR;
     }
+
+    // EXP: no se logea aqui dado que inunda la pantalla cuando se mandan mails grandes
 
     metrics_sent_bytes((uint32_t)sent_count);
 
