@@ -35,7 +35,7 @@ void mng_buffer_to_request(uint8_t * request, mng_request * converted){
     // EXP: me protejo en contra de que me mande mas de lo permitido
     converted->length =  len > MAX_DATA_LEN ? MAX_DATA_LEN : len;
 
-    memcpy(converted + offset, converted->data, converted->length);
+    memcpy(converted->data, request + offset, converted->length);
 }
 
 void mng_response_to_buffer(mng_response * response, uint8_t * converted, size_t * converted_len){

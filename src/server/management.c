@@ -5,9 +5,11 @@
 
 #include "./include/m3.h"
 #include "./include/server.h"
-#include "../utils/include/logger.h"
-
 #include "./include/management.h"
+
+#include "../utils/include/logger.h"
+#include "../pop3/include/users.h"
+
 
 // = = = = = =  DEFINES Y MACROS  = = = = = =  
 
@@ -15,45 +17,48 @@
 
 // = = = = = =  ACTIONS  = = = = = =  
 
-typedef uint8_t (*mng_action)(mng_response * response);
+typedef uint8_t (*mng_action)(mng_request * request, mng_response * response);
 
-uint8_t mng_get_bytes_sent(mng_response * response){
+uint8_t mng_get_bytes_sent(mng_request * request, mng_response * response){
     uint32_t sent = get_server_state()->metrics.bytes_sent;
     memcpy(response->data, &sent, sizeof(sent));
     response->length = sizeof(sent);
     return MNG_SUCCESS;
 }
-uint8_t mng_get_bytes_recieved(mng_response * response){
+uint8_t mng_get_bytes_recieved(mng_request * request, mng_response * response){
     uint32_t recieved = get_server_state()->metrics.bytes_recieved;
     memcpy(response->data, &recieved, sizeof(recieved));
     response->length = sizeof(recieved);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_get_total_connections(mng_response * response){
+uint8_t mng_get_total_connections(mng_request * request, mng_response * response){
     uint32_t total_connections = get_server_state()->metrics.total_connections;
     memcpy(response->data, &total_connections, sizeof(total_connections));
     response->length = sizeof(total_connections);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_get_curr_connections(mng_response * response){
+uint8_t mng_get_curr_connections(mng_request * request, mng_response * response){
     uint32_t curr_connections = get_server_state()->metrics.current_connections;
     memcpy(response->data, &curr_connections, sizeof(curr_connections));
     response->length = sizeof(curr_connections);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_add_user(mng_response * response){
-    // TODO
-
-
+uint8_t mng_noop(mng_request * request, mng_response * response){
+    response->length = 0;
     return MNG_SUCCESS;
 }
 
+uint8_t mng_add_user(mng_request * request, mng_response * response){
 
-uint8_t mng_noop(mng_response * response){
-    response->length = 0;
+    bool success = add_user((char *) request->data);
+
+    if(!success){
+        return MNG_INVALID_ARGS;
+    }
+
     return MNG_SUCCESS;
 }
 
@@ -101,7 +106,7 @@ void mng_handle_request(mng_request * request, mng_response * response){
     // EXP: devolvemos el mismo op_code que nos mando
     response->op_code = request->op_code;
 
-    uint8_t status =  mng_v1_actions[request->op_code](response);
+    uint8_t status =  mng_v1_actions[request->op_code](request, response);
 
     // EXP: el status esta dictado por las actions
     response->status = status;
@@ -114,11 +119,13 @@ void mng_passive_handler(struct selector_key *key){
     socklen_t client_address_len = sizeof(client_address);
 
     uint8_t read_buffer[UDP_BUFFER_SIZE], write_buffer[UDP_BUFFER_SIZE];
-    size_t write_len;
-    mng_request request;
-    mng_response response;
     memset(read_buffer, 0, UDP_BUFFER_SIZE);
     memset(write_buffer, 0, UDP_BUFFER_SIZE);
+
+    mng_request request;
+    mng_response response;
+    memset(&request, 0, sizeof(request));
+    memset(&response, 0, sizeof(response));
 
     ssize_t recieved_count = recvfrom(key->fd, read_buffer, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_address, &client_address_len);
 
@@ -131,6 +138,8 @@ void mng_passive_handler(struct selector_key *key){
     mng_buffer_to_request(read_buffer, &request);
  
     mng_handle_request(&request, &response);
+
+    size_t write_len;
 
     // EXP: tengo que convertir el struct a un buffer
     // EXP: debe tambien reportar la longitud de la respuesta
