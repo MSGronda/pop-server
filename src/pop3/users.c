@@ -7,6 +7,32 @@
 
 #include "include/users.h"
 
+bool add_user(char *s) {
+    struct pop3_server_state * server_state = get_server_state();
+
+    if(server_state->amount_users >= MAX_USERS){
+        return false;
+    }
+
+    users_data * user = &server_state->users[server_state->amount_users];
+
+    server_state->amount_users++;
+
+    char *p = strchr(s, ':');
+    if(p == NULL) {
+        // TODO: change
+        fprintf(stderr, "password not found\n");
+        exit(1);
+    } else {
+        *p = 0;
+        p++;
+        user->name = s;
+        user->pass = p;
+        user->sessionActive = false;
+    }
+    return true;
+}
+
 int find_user(const char * username) {
     struct pop3_server_state * server_state = get_server_state();
 

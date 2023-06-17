@@ -9,6 +9,7 @@
 #include <stdbool.h>
 
 #include "./include/args.h"
+#include "../pop3/include/users.h"
 
 static unsigned short
 port(const char *s) {
@@ -25,21 +26,6 @@ port(const char *s) {
      return (unsigned short)sl;
 }
 
-static void
-user(char *s, users_data *user) {
-    char *p = strchr(s, ':');
-    if(p == NULL) {
-        fprintf(stderr, "password not found\n");
-        exit(1);
-    } else {
-        *p = 0;
-        p++;
-        user->name = s;
-        user->pass = p;
-        user->sessionActive = false;
-    }
-
-}
 
 static void
 version(void) {
@@ -98,9 +84,7 @@ void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_
                     fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
                     exit(1);
                 } else {
-                    user(optarg, &pop3_server_state->users[nusers]);
-                    nusers++;
-                    pop3_server_state->amount_users = nusers;
+                    add_user(optarg);
                 }
             break;
         case 'f':
