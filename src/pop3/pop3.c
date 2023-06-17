@@ -150,6 +150,7 @@ void destroy_all_connections(){
         free_mail_info_no_key(connection_pool);
         destroy_connection_info(connection_pool);
     }
+    log(DEBUG, "%s", "Destroyed all connections")
 }
 
 

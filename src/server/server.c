@@ -61,6 +61,8 @@ void free_server_resources(){
 
     free_users();
     free(server_state.users);
+
+    log(DEBUG, "%s", "All server resources successfully freed")
 }
 
 struct pop3_server_state * get_server_state() {

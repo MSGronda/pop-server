@@ -59,6 +59,8 @@ uint8_t mng_add_user(mng_request * request, mng_response * response){
         return MNG_INVALID_ARGS;
     }
 
+    log(DEBUG, "%s", "New user added to server via manager") 
+
     return MNG_SUCCESS;
 }
 
@@ -134,6 +136,8 @@ void mng_passive_handler(struct selector_key *key){
         return;
     }
 
+    log(DEBUG, "New UDP packet (%ld bytes) recieved by manager", recieved_count)
+
     // EXP: tengo que convertir el buffer a un struct
     mng_buffer_to_request(read_buffer, &request);
  
@@ -146,4 +150,6 @@ void mng_passive_handler(struct selector_key *key){
     mng_response_to_buffer(&response, write_buffer, &write_len);
 
     sendto(key->fd, write_buffer, write_len, 0, (const struct sockaddr *)&client_address, client_address_len);
+
+    log(DEBUG, "UDP packet (%ld bytes) sent by manager", write_len)
 }
