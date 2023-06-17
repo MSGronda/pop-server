@@ -15,6 +15,8 @@
 
 #include "../utils/include/logger.h"
 
+#include <time.h>
+
 // = = = =  Actions = = = =  
 
 // EXP: puntero a funcion que ejecuta la accion
@@ -201,7 +203,10 @@ int pop3_pass(struct selector_key *key){
                buffer_write_n(&client_data->write_buffer, answer, len);
                client_data->state = TRANSACTION;
 
-               log(INFO, "User %s logged in successfully", client_data->username)
+               time_t st_time  = time(NULL);
+               struct tm tm = *localtime(&st_time);
+
+               log(INFO, "User %s logged in successfully [%d-%02d-%02d %02d:%02d:%02d]", client_data->username, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec)
 
                return true;
           }
@@ -272,7 +277,10 @@ int pop3_quit(struct selector_key *key) {
           }
      }
 
-     log(INFO, "User %s logging off", client_data->username)
+     time_t st_time  = time(NULL);
+     struct tm tm = *localtime(&st_time);
+
+     log(INFO, "User %s logging off [%d-%02d-%02d %02d:%02d:%02d]", client_data->username, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec)
 
      int rsp_len = strlen(msg);
      buffer_write_n(&client_data->write_buffer, msg, rsp_len);

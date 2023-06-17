@@ -511,7 +511,7 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
 }
 
 bool finish_mail_retrieval(user_mail_info * mail_info, buffer * write_buffer){
-    bool write_success = write_multiline_end(write_buffer);
+    bool write_success = write_multiline_end_file(write_buffer, &mail_info->parser);
 
     if(!write_success){
         return false;
