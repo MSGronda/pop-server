@@ -5,26 +5,57 @@
 static void help();
 
 
-int main() {
-    int socket_fd;
-    struct sockaddr_in server_address;
-    socklen_t server_address_len = sizeof(server_address);
-    const char* server_ip = "127.0.0.1";  // Replace with the target IP address
-    int server_port = 25566;  // Replace with the target port number
+int main(int argc, char * argv[]) {
 
-    // Create socket
-    socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (socket_fd < 0) {
-        perror("Failed to create socket");
+    if(argc != 3) {
+        printf("Use: ./client.out <server-address> <server-port>\n");
         exit(EXIT_FAILURE);
     }
 
+    int socket_fd;
+    struct sockaddr_in server_address;
+    struct sockaddr_in6 server_address6;
+    socklen_t server_address_len = sizeof(server_address);
+
+    //const char* server_ip = "127.0.0.1";  // Replace with the target IP address
+    //int server_port = 25566;  // Replace with the target port number
+
+    const char * server_ip = argv[1];
+    int server_port = atoi(argv[2]);
+    int connection;
+
+    
+
     // Set up server address
     memset(&server_address, 0, sizeof(server_address));
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(server_port);
-    if (inet_pton(AF_INET, server_ip, &server_address.sin_addr) <= 0) {
+    memset(&server_address6, 0, sizeof(server_address6));
+
+    // Get port
+    if((server_port = htons(atoi(argv[2]))) <= 0) {
+        perror("Invalid port\n");
+        exit(EXIT_FAILURE);
+    }
+
+    
+    if (inet_pton(AF_INET, server_ip, &server_address.sin_addr.s_addr) > 0) {
+        server_address.sin_family = AF_INET;
+        server_address.sin_port = server_port;
+        connection = 4;
+    } else if (inet_pton(AF_INET6, server_ip, &server_address6.sin6_addr) > 0) {
+        server_address6.sin6_family = AF_INET6;
+        server_address6.sin6_port = server_port;
+        connection = 6;
+    }
+    else {
         perror("Invalid address/Address not supported");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create socket
+    int connection_type = connection == 4 ? AF_INET : AF_INET6;
+    socket_fd = socket(connection_type, SOCK_DGRAM, 0);
+    if (socket_fd < 0) {
+        perror("Failed to create socket\n");
         exit(EXIT_FAILURE);
     }
 
@@ -48,7 +79,6 @@ int main() {
             operation = 1;
         } else if(strcmp(read_buffer,"currusers") == 0) {
             operation = 3;
-            continue;
         } else if(strcmp(read_buffer,"hisusers") == 0) {
             operation = 2;
         } else if(strcmp(read_buffer,"adduser") == 0) {
