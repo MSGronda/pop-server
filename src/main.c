@@ -29,7 +29,8 @@
 
 
 int main(int argc, char * argv[]) {
-    char * error_msg;
+    int ret;
+    char * error_msg = NULL;
     int socket_fd = 1, mng_socket_fd = 1;
     fd_selector selector = NULL;
     selector_status init_status;
@@ -43,7 +44,7 @@ int main(int argc, char * argv[]) {
     struct pop3_server_state * server_state = get_server_state();
 
     if(server_state_initialized == false) {
-        ERROR_CATCH("Initializing server state", error_finally)
+        ERROR_CATCH("Initializing server state", finally)
     }
 
     parse_args(argc, argv, server_state);
@@ -56,7 +57,7 @@ int main(int argc, char * argv[]) {
     socket_fd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
     if(socket_fd < 0) {
-        ERROR_CATCH("Error creating passive socket", error_finally)
+        ERROR_CATCH("Error creating passive socket", finally)
     }
 
     // EXP: Deshabilito reportar si falla
@@ -72,17 +73,17 @@ int main(int argc, char * argv[]) {
 
     // EXP: bindeo el socket
     if (bind(socket_fd, (struct sockaddr *) &address, sizeof(address)) < 0) {
-        ERROR_CATCH("Error binding passive socket", error_finally)
+        ERROR_CATCH("Error binding passive socket", finally)
     }
     
     // EXP: listeneo (?) el socket
     if(listen(socket_fd, MAX_PENDING_CONNECTIONS) < 0) {
-        ERROR_CATCH("Error listening to passive socket", error_finally)
+        ERROR_CATCH("Error listening to passive socket", finally)
     }
 
     // EXP: setea fd como NON_BLOCING;
     if(selector_fd_set_nio(socket_fd) == -1) {
-        ERROR_CATCH("Error setting socket for passive socket as non-blocking", error_finally)
+        ERROR_CATCH("Error setting socket for passive socket as non-blocking", finally)
     }
 
     // = = = = = CONFIGURACION DEL SELECTOR = = = = = =
@@ -97,13 +98,13 @@ int main(int argc, char * argv[]) {
     };
     init_status = selector_init(&configuration);
     if (init_status != 0) {
-        ERROR_CATCH("Error initializing selector library", error_finally)
+        ERROR_CATCH("Error initializing selector library", finally)
     }
 
     // EXP: genero un nuevo selector. Todos los socket y otras funcionalidades se "meten" a este selector
     selector = selector_new(SELECTOR_SIZE);
     if(selector == NULL) {
-        ERROR_CATCH("Error creating new selector for passive socket", error_finally)
+        ERROR_CATCH("Error creating new selector for passive socket", finally)
     }
 
     const struct fd_handler pop3_handlers = {
@@ -118,7 +119,7 @@ int main(int argc, char * argv[]) {
     log(INFO, "%s","Passive socket created successfully")
 
     if(select_status != SELECTOR_SUCCESS) {
-        ERROR_CATCH("Error registering selector for passive socket", error_finally)
+        ERROR_CATCH("Error registering selector for passive socket", finally)
     }
 
 
@@ -128,7 +129,7 @@ int main(int argc, char * argv[]) {
     mng_socket_fd = socket(AF_INET6, SOCK_DGRAM, 0);
 
     if(mng_socket_fd < 0) {
-        ERROR_CATCH("Error creating passive socket", error_finally)
+        ERROR_CATCH("Error creating passive socket", finally)
     }
 
     // EXP: Deshabilito reportar si falla
@@ -144,12 +145,12 @@ int main(int argc, char * argv[]) {
 
     // EXP: bindeo el socket
     if (bind(mng_socket_fd, (struct sockaddr *) &mngmnt_address, sizeof(mngmnt_address)) < 0) {
-        ERROR_CATCH("Error binding passive socket", error_finally)
+        ERROR_CATCH("Error binding passive socket", finally)
     }
     
     // EXP: setea fd como NON_BLOCING;
     if(selector_fd_set_nio(mng_socket_fd) == -1) {
-        ERROR_CATCH("Error setting socket for passive socket as non-blocking", error_finally)
+        ERROR_CATCH("Error setting socket for passive socket as non-blocking", finally)
     }
 
     const struct fd_handler mng_handlers = {
@@ -164,7 +165,7 @@ int main(int argc, char * argv[]) {
     log(INFO, "%s","Passive socket created successfully")
 
     if(select_status != SELECTOR_SUCCESS) {
-        ERROR_CATCH("Error registering selector for passive socket", error_finally)
+        ERROR_CATCH("Error registering selector for passive socket", finally)
     }
 
 
@@ -173,17 +174,18 @@ int main(int argc, char * argv[]) {
     while(server_state->running) {
         select_status = selector_select(selector);
         if(select_status != SELECTOR_SUCCESS) {
-            ERROR_CATCH("Error executing select for passive socket", error_finally)
+            ERROR_CATCH("Error executing select for passive socket", finally)
         }
     }
-    
-    //TODO: liberar recursos de usuarios
-    return 0;
 
-error_finally:
-    log(ERROR,"%s", error_msg)
+finally:
+    ret = error_msg == NULL ? 1 : 0;
 
+    if(error_msg != NULL){
+        log(ERROR,"%s", error_msg)
+    }
     if(server_state_initialized != false){
+        free_users();
         destroy_server_state();
     }
     if(socket_fd > 0){
@@ -195,5 +197,6 @@ error_finally:
     if(init_status != SELECTOR_SUCCESS){
         selector_close();
     }
-    return 1;
+
+    return ret;
 }

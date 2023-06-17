@@ -17,8 +17,6 @@ void mail_read_handler(struct selector_key *key);
 
 // = = = = = = =<   CONSTANTES / VARIABLES ESTATICAS  >= = = = = = = 
 
-#define MAX_NAME_SIZE 256
-
 static const struct fd_handler mail_handlers ={
     .handle_read = &mail_read_handler,
     .handle_write = NULL,

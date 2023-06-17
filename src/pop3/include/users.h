@@ -1,6 +1,7 @@
 #ifndef USERS_H
 #define USERS_H
 
+#define MAX_NAME_SIZE 256
 
 #include "../../server/include/server.h"
 
@@ -18,6 +19,7 @@ user_status logout_user(const char * username);
 
 int find_user(const char * username);
 bool add_user(char *s);
+void free_users();
 
 
 #endif

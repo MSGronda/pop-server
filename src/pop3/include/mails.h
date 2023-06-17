@@ -2,6 +2,7 @@
 #define MAILS_H
 
 #include "./pop3.h"
+#include "./users.h"
 
 #include "../../utils/include/buffer.h"
 #include "../../utils/include/selector.h"

@@ -7,6 +7,15 @@
 
 #include "include/users.h"
 
+void free_users(){
+    struct pop3_server_state * server_state = get_server_state();
+
+    for(unsigned i=0; i<server_state->amount_users; i++){
+        free(server_state->users[i].name);
+        free(server_state->users[i].pass);
+    }
+}
+
 bool add_user(char *s) {
     struct pop3_server_state * server_state = get_server_state();
 
@@ -18,18 +27,29 @@ bool add_user(char *s) {
 
     server_state->amount_users++;
 
-    char *p = strchr(s, ':');
-    if(p == NULL) {
-        // TODO: change
-        fprintf(stderr, "password not found\n");
-        exit(1);
-    } else {
-        *p = 0;
-        p++;
-        user->name = s;
-        user->pass = p;
-        user->sessionActive = false;
+    char * p = strchr(s, ':');
+    if(p == NULL) 
+        return false;
+
+    // EXP: null termination y hago que p apuente a la password
+    *p = 0;
+    p++;
+
+    char * name = malloc(MAX_NAME_SIZE);
+    char * pass = malloc(MAX_NAME_SIZE);
+    if(name == NULL || pass == NULL){
+        return false;
     }
+    memset(name, 0, MAX_NAME_SIZE);
+    memset(pass, 0, MAX_NAME_SIZE);
+
+    strncpy(name, s, MAX_NAME_SIZE);
+    strncpy(pass, p, MAX_NAME_SIZE);
+
+    user->name = name;
+    user->pass = pass;
+    user->sessionActive = false;
+
     return true;
 }
 
