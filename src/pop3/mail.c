@@ -99,7 +99,6 @@ bool write_multiline_end(buffer * write_buffer){
 // = = = = = = =<   INICIALIZACION Y DESTRUCCION  >= = = = = = = 
 
 unsigned int initialize_mails(client_connection_data * client_data, char * username, char * maildir){
-
     user_mail_info * mail_info = malloc(sizeof(user_mail_info));
     if(mail_info == NULL){
         return ERROR_ALLOC;
@@ -324,6 +323,7 @@ void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg) 
         return;
     }
 
+    // EXP: se aplica baja logica, asi se puede restaurar si se hace RSET
     mail_info->mails[mail_num - 1].state = 0;
     mail_info->current_count--;
     mail_info->total_octets -= mail_info->mails[mail_num - 1].octets;
@@ -360,8 +360,12 @@ void restore_mail(buffer * write_buffer, user_mail_info * mail_info) {
 }
 
 
-
 // = = = = = = =<   RETR   >= = = = = = = 
+
+// EXP: para asegurarse que el stuffing ocurra en un solo paso, es decir, que no tenga 
+// EXP: que postponer el stuffing por falta de espacio del buffer de salida, se hace
+// EXP: usa un "lookbehind", es decir, se analiza los bytes anteriores mandados. 
+// EXP: evita tener que mirar los bytes futuros
 
 void init_stuffing_parser(stuffing_parser * parser){
     parser->prev = 0;
@@ -386,6 +390,8 @@ void transfer_bytes(buffer * retrive_buffer, buffer * write_buffer, stuffing_par
 
     unsigned i=0, j=0;
     while(i < read_max && j < write_max){
+
+        // EXP: aplicamos el stuffing. por como se programo, siempre hay espacio en el buffer de salida para hacerlo
         if(needs_stuffing(parser)){
             write_addr[j++] = '.';
             stuffing_consume(parser, read_addr[i]);
@@ -487,6 +493,8 @@ int setup_mail_retrieval(struct selector_key *key, unsigned long mail_num, char 
 
     init_stuffing_parser(&client_data->mail_info->parser);
 
+    log(DEBUG, "User %s retrieving mail %s", client_data->username, client_data->mail_info->mails[mail_num - 1].name)
+
     return true;
 }
 
@@ -511,36 +519,31 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
     char * error_msg;
     client_connection_data * client_data = ATTACHMENT(key);
 
-    unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
-    user_mail_info * mail_info = client_data->mail_info;
-
-     if(!VALID_MAIL(mail_num, mail_info) || !client_data->mail_info->is_dir_valid){
-        handle_invalid_mail(&client_data->write_buffer);
-        return true;
-    }
-
-    // EXP: escribimos la pimera linea (que se considera single line)
-    if(client_data->command.bytes_written == 0 && client_data->mail_info->filed_fd == 0){
-
-        log(DEBUG, "User %s retrieving mail %d", client_data->username, 0)
-
-        char * ini_msg = "+OK message follows\r\n";
-        size_t ini_msg_len = strlen(ini_msg);
-        buffer_write_n(&client_data->write_buffer, ini_msg, ini_msg_len);
-    }
-
     // EXP: abro el archivo y me suscribo a la lectura. solo se hace 1 vez
     if(client_data->mail_info->filed_fd == 0) {
+
+        // EXP: convierto el string que me paso el usuario a un numero y me fijo si un mail asi si existe
+        unsigned long mail_num = convert_mail_num(client_data->command_parser.current_command.argument);
+        user_mail_info * mail_info = client_data->mail_info;
+
+        if(!VALID_MAIL(mail_num, mail_info) || !client_data->mail_info->is_dir_valid){
+            handle_invalid_mail(&client_data->write_buffer);
+            return true;
+        }
+
+        // EXP: escribimos la pimera linea (que se considera single line)
+        if(client_data->command.bytes_written == 0 && client_data->mail_info->filed_fd == 0){
+            char * ini_msg = "+OK message follows\r\n";
+            size_t ini_msg_len = strlen(ini_msg);
+            buffer_write_n(&client_data->write_buffer, ini_msg, ini_msg_len);
+        }
+
         int setup_success = setup_mail_retrieval(key, mail_num, &error_msg, maildir);
 
         if(!setup_success){
             goto error;
         }
-
-        // EXP: no termine, tengo que seguir probando (?)
-        return false;
     }
-
 
     if(buffer_can_read(&client_data->mail_info->retrive_buffer) && buffer_can_write(&client_data->write_buffer)){    
         transfer_bytes(&client_data->mail_info->retrive_buffer, &client_data->write_buffer, &client_data->mail_info->parser);
