@@ -1,6 +1,16 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <ctype.h>
+#include <limits.h>
+#include <unistd.h>
+
+#include "../include/common.h"
 #include "./include/mails.h"
 
 void mail_read_handler(struct selector_key *key);

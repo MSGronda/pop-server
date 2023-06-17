@@ -1,19 +1,11 @@
 #ifndef MAILS_H
 #define MAILS_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <ctype.h>
-#include <limits.h>
-#include <unistd.h>
-
-#include "./pop3_structures.h"
+#include "./pop3.h"
 
 #include "../../utils/include/buffer.h"
 #include "../../utils/include/selector.h"
-#include "../../include/common.h"
+
 
 typedef struct client_connection_data client_connection_data;
 

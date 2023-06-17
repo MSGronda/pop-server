@@ -1,6 +1,27 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <time.h>
+#include <sys/signal.h>
 
+#include "./include/common.h"
+
+#include "./server/include/server.h" 
+#include "../server/include/management.h"
+
+#include "./pop3/include/pop3.h"
+#include "./pop3/include/users.h"
+
+#include "./utils/include/selector.h"
+#include "./utils/include/buffer.h"
+#include "./utils/include/logger.h"
+#include "./utils/include/args.h"
 #include "./include/main.h"
 
 #define MAX_PENDING_CONNECTIONS 500

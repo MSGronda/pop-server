@@ -1,3 +1,12 @@
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "./include/m3.h"
+#include "./include/server.h"
+#include "../utils/include/logger.h"
+
 #include "./include/management.h"
 
 // = = = = = =  DEFINES Y MACROS  = = = = = =  

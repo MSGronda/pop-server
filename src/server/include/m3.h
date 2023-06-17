@@ -2,8 +2,7 @@
 #define M3_H
 
 #include <stdint.h>
-#include <arpa/inet.h>
-#include <string.h>
+
 
 
 // EXP: el cliente debe usar este token para autenticarse

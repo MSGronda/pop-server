@@ -1,11 +1,6 @@
 #ifndef USERS_H
 #define USERS_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-
 #include "../../server/include/server.h"
 
 // three types, 0 when accepts, 1 when user or pass wrong for security, 2 when something else failed

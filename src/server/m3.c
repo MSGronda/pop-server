@@ -1,6 +1,8 @@
-#include "./include/m3.h"
-
+#include <arpa/inet.h>
+#include <string.h>
 #include <stdio.h>
+
+#include "./include/m3.h"
 
 #define _GET_BYTES(buffer, type) (*((type *) (buffer)))
 #define GET_UINT8(buffer) _GET_BYTES(buffer, uint8_t)

@@ -6,6 +6,11 @@
  *            mantiene puntero de lectura y de escritura.
  */
 
+#include <string.h>
+#include <assert.h>
+
+
+
 #include "./include/buffer.h"
 
 inline void

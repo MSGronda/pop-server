@@ -1,6 +1,10 @@
 #ifndef __logger_h_
 #define __logger_h_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 typedef enum {DEBUG=0, INFO, ERROR, FATAL} LOG_LEVEL;
 
 extern LOG_LEVEL current_level;

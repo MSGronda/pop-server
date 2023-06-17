@@ -1,5 +1,7 @@
-#include "./include/server.h"
+#include <string.h>
+#include <stdlib.h>
 
+#include "./include/server.h"
 
 struct pop3_server_state server_state;
 

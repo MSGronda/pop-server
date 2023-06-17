@@ -1,6 +1,13 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 
+#include <stdio.h>  // perror
+#include <stdlib.h> // malloc
+#include <string.h> // memset
+#include <assert.h> // :)
+#include <errno.h>  // :)
+#include <pthread.h>
+
 #include "./include/selector.h"
 
 /**
