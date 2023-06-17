@@ -173,7 +173,7 @@ finally:
     ret = error_msg == NULL ? 1 : 0;
 
     if(error_msg != NULL){
-        log(ERROR,"%s", error_msg);
+        log(FATAL,"%s", error_msg);
     }
     else{
         log(INFO, "%s", "Server finished execution successfully")

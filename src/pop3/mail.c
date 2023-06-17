@@ -444,7 +444,7 @@ void mail_read_handler(struct selector_key *key){
     return;
 
 error:
-    log(DEBUG, "%s", error_msg)
+    log(ERROR, "%s", error_msg)
     mail_info->finished_reading = true;
     selector_unregister_fd(key->s, mail_info->filed_fd);
 }
@@ -555,7 +555,7 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
 
     return false;
 error:
-    log(DEBUG, "%s", error_msg)
+    log(ERROR, "%s", error_msg)
     handle_invalid_mail(&client_data->write_buffer);
     return true;
 }

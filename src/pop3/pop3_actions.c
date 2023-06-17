@@ -189,11 +189,11 @@ int pop3_pass(struct selector_key *key){
 
                if(resp == ERROR_DIR){
                     client_data->mail_info->is_dir_valid = false;
-                    log(DEBUG, "%s", "Error loading mail data for client due to: directory error")
+                    log(ERROR, "%s", "Error loading mail data for client due to: directory error")
                }
                else if(resp != MAILS_SUCCESS) {
                     client_data->mail_info->is_dir_valid = false;
-                    log(DEBUG,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error" )
+                    log(ERROR,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error" )
                }
 
                char * answer = "+OK\r\n";
@@ -258,7 +258,7 @@ int pop3_quit(struct selector_key *key) {
                          log(DEBUG, "User %s deleted mail %s", client_data->username, user_maildir)
 
                          if(rm_state && !err) {
-                              log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info->mails[i].name, client_data->client_fd)
+                              log(ERROR,"Error deleting file (%s) for client with fd: %d", client_data->mail_info->mails[i].name, client_data->client_fd)
                               msg = "-ERR some messages not deleted.\r\n";
                               err = 1;
                          }
@@ -267,7 +267,7 @@ int pop3_quit(struct selector_key *key) {
                free(user_maildir);
           }
           else{
-               log(DEBUG,"Error allocating file name for client with fd: %d", client_data->client_fd)
+               log(ERROR,"Error allocating file name for client with fd: %d", client_data->client_fd)
                msg = "-ERR some messages not deleted.\r\n";
           }
      }
