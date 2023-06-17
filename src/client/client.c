@@ -109,13 +109,18 @@ int main(int argc, char * argv[]) {
         request.version = MNG_V1;
         request.auth_token = AUTH_TOKEN;
         request.op_code = operation;
-        request.request_id = id++;
+        request.request_id = id;
         request.length = 0;
 
         size_t request_len;
         mng_request_to_buffer(&request, buffer, &request_len);
 
-        ssize_t numBytesSent = sendto(socket_fd, buffer, request_len, 0, (struct sockaddr*)&server_address, server_address_len);
+        ssize_t numBytesSent;
+        if(connection == 4) {
+            numBytesSent = sendto(socket_fd, buffer, request_len, 0, (struct sockaddr*)&server_address, server_address_len);
+        } else {
+            numBytesSent = sendto(socket_fd, buffer, request_len, 0, (struct sockaddr*)&server_address6, server_address_len);
+        }
         if (numBytesSent < 0) {
             perror("Failed to send packet");
             exit(EXIT_FAILURE);
@@ -124,7 +129,12 @@ int main(int argc, char * argv[]) {
         // EXP: reseteo el buffer
         memset(buffer, 0, BUFF_SIZE);
 
-        ssize_t recieved_count = recvfrom(socket_fd, buffer, BUFF_SIZE, 0, (struct sockaddr *)&server_address, &server_address_len);
+        ssize_t recieved_count;
+        if(connection == 4) {
+            recieved_count = recvfrom(socket_fd, buffer, BUFF_SIZE, 0, (struct sockaddr *)&server_address, &server_address_len);
+        } else {
+            recieved_count = recvfrom(socket_fd, buffer, BUFF_SIZE, 0, (struct sockaddr *)&server_address6, &server_address_len);
+        }
 
         if(recieved_count < 0){
             perror("Failed to recieve packet");
@@ -134,6 +144,27 @@ int main(int argc, char * argv[]) {
         mng_response response;
         mng_buffer_to_response(buffer, &response);
 
+        
+        switch(response.status) {
+            case MNG_SUCCESS:
+                break;
+            case MNG_INVALID_VERSION:
+                printf("Error, invalid version of response. Try again.\n");
+                break;
+            case MNG_INVALID_OP_CODE:
+                printf("Error, invalid operation on response. Try again.\n");
+                break;
+            case MNG_INVALID_TOKEN:
+                printf("Error, invalid token on response. Try again.\n");
+                break;
+            case MNG_INVALID_ARGS:
+                printf("Error, invalid token on response. Try again.\n");
+                break;
+            default:
+                printf("Unexpected error occurred. Try again.\n");
+                break;
+        }
+        
         printf("version: %d\n", response.version);
         printf("status: %d\n", response.status);
         printf("op_code: %d\n", response.op_code);
