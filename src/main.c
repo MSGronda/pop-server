@@ -116,10 +116,11 @@ int main(int argc, char * argv[]) {
     // EXP: le especifico que cuando un cliente intenta leer del socket pasivo, que ejecute el handler
     select_status = selector_register(selector, socket_fd, &pop3_handlers, OP_READ, NULL);
     
-    log(INFO, "%s","Passive socket created successfully")
-
     if(select_status != SELECTOR_SUCCESS) {
         ERROR_CATCH("Error registering selector for passive socket", finally)
+    }
+    else{
+        log(INFO, "%s","Passive socket created successfully")
     }
 
 
@@ -162,12 +163,12 @@ int main(int argc, char * argv[]) {
     // EXP: le especifico que cuando un cliente intenta leer del socket pasivo, que ejecute el handler
     select_status = selector_register(selector, mng_socket_fd, &mng_handlers, OP_READ, NULL);
     
-    log(INFO, "%s","Passive socket created successfully")
-
     if(select_status != SELECTOR_SUCCESS) {
         ERROR_CATCH("Error registering selector for passive socket", finally)
     }
-
+    else{
+        log(INFO, "%s","Passive socket created successfully")
+    }
 
     // = = = = = LOOP INFINITO = = = = = =
     
@@ -184,10 +185,6 @@ finally:
     if(error_msg != NULL){
         log(ERROR,"%s", error_msg)
     }
-    if(server_state_initialized != false){
-        free_users();
-        destroy_server_state();
-    }
     if(socket_fd > 0){
         close(socket_fd);
     }
@@ -196,6 +193,11 @@ finally:
     }
     if(init_status != SELECTOR_SUCCESS){
         selector_close();
+    }
+
+
+    if(server_state_initialized != false){
+        free_server_resources();
     }
 
     return ret;

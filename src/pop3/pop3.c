@@ -130,8 +130,26 @@ void destroy_connection_info(client_connection_data * client_data){
     else {
         previous->next = client_data->next;
     }
-
+    if(client_data->command_parser.current_command.argument != NULL){
+        free(client_data->command_parser.current_command.argument);
+    }
+    if(client_data->username != NULL){
+        free(client_data->username);
+    }
+    if(client_data->mail_info != NULL){
+        free(client_data->mail_info);
+    }
     free(client_data);
+}
+
+void destroy_all_connections(){
+    while(connection_pool != NULL){
+        if(connection_pool->client_fd != -1) {
+            close(connection_pool->client_fd);
+        }
+        free_mail_info_no_key(connection_pool);
+        destroy_connection_info(connection_pool);
+    }
 }
 
 

@@ -39,10 +39,10 @@ static const command_info all_command_info[] = {
 
 void parser_init(input_parser * parser) {
     //inicializa el parser - necesario tener struct de parser para poder mantener el estado en distintas llamadas
-    parser->arg_length      = 0;
-    parser->args_count      = 0;
-    parser->line_size       = 0;
-    parser->state          = RECOGNITION_STATE;
+
+    memset(parser, 0, sizeof(input_parser));
+
+    parser->state = RECOGNITION_STATE;
     parser->is_expecting_new_arg = false;
 }
 
@@ -53,7 +53,6 @@ command_state parser_feed(input_parser * parser, const char c, bool * finished) 
     if(parser->line_size == 0) {
         //si no recibio nada el parser antes, inicializa el comando
         current_command->type = CMD_NOT_RECOGNIZED;
-        current_command->argument = NULL;
         parser->state = RECOGNITION_STATE;
         parser->correctly_formed   = 0;
         parser->args_count    = 0;
@@ -101,10 +100,6 @@ static void handle_parsed(command_instance * current_command, input_parser * par
 
     if(not_match) {
         current_command->type = CMD_NOT_RECOGNIZED;
-        if(current_command->argument != NULL) {
-            free(current_command->argument);
-            current_command->argument = NULL;
-        }
     }
 
     current_command->is_multi = is_multi(current_command, parser->args_count);

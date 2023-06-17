@@ -185,8 +185,17 @@ unsigned int initialize_mails(client_connection_data * client_data, char * usern
     mail_info->total_octets = total_octets;
 
     closedir(dir);
-
+    free(file_name);
+    
     return MAILS_SUCCESS;
+}
+
+void free_mail_file_names(client_connection_data * client_data){
+    for(unsigned i=0; i < client_data->mail_info->mail_count; i++){
+        if(client_data->mail_info->mails[i].name != NULL){
+            free(client_data->mail_info->mails[i].name);
+        }
+    }
 }
 
 void free_mail_info(struct selector_key *key){
@@ -194,6 +203,9 @@ void free_mail_info(struct selector_key *key){
     if( client_data->mail_info == NULL){
         return;
     }
+
+    free_mail_file_names(client_data);
+
     client_data->mail_info->finished_reading = true;
     if(client_data->mail_info->filed_fd != 0){
         selector_unregister_fd(key->s, client_data->mail_info->filed_fd);
@@ -201,6 +213,18 @@ void free_mail_info(struct selector_key *key){
     }
 }
 
+void free_mail_info_no_key(client_connection_data * client_data){
+    if( client_data->mail_info == NULL){
+        return;
+    }
+
+    free_mail_file_names(client_data);
+
+    client_data->mail_info->finished_reading = true;
+    if(client_data->mail_info->filed_fd != 0){
+        close(client_data->mail_info->filed_fd);
+    }
+}
 // = = = = = = =<   COMANDOS  >= = = = = = = 
 
 int list_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg){

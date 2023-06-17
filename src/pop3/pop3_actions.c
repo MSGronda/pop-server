@@ -243,22 +243,30 @@ int pop3_quit(struct selector_key *key) {
           int err = 0;
           int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);
 
-          for(size_t i = 0; i < client_data->mail_info->mail_count ; i++) {
-               if(client_data->mail_info->mails[i].state == 0) {
+          if(user_base_len > 0){
+               for(size_t i = 0; i < client_data->mail_info->mail_count ; i++) {
+                    if(client_data->mail_info->mails[i].state == 0) {
 
-                    strcpy(user_maildir + user_base_len, client_data->mail_info->mails[i].name);
-                    int rm_state = remove(user_maildir);
-                    //rm_state is == 0 if it was correctly removed
-                    if(rm_state && !err) {
-
-                         log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info->mails[i].name, client_data->client_fd)
-
-                         msg = "-ERR some messages not deleted.\r\n";
-                         err = 1;
-                    }
-               }    
+                         strcpy(user_maildir + user_base_len, client_data->mail_info->mails[i].name);
+                         int rm_state = remove(user_maildir);
+                         //rm_state is == 0 if it was correctly removed
+                         if(rm_state && !err) {
+                              log(DEBUG,"Error deleting file (%s) for client with fd: %d", client_data->mail_info->mails[i].name, client_data->client_fd)
+                              msg = "-ERR some messages not deleted.\r\n";
+                              err = 1;
+                         }
+                    }    
+               }
+               free(user_maildir);
+          }
+          else{
+               log(DEBUG,"Error allocating file name for client with fd: %d", client_data->client_fd)
+               msg = "-ERR some messages not deleted.\r\n";
           }
      }
+
+
+
      int rsp_len = strlen(msg);
      buffer_write_n(&client_data->write_buffer, msg, rsp_len);
      client_data->state = CLIENT_FINISHED;

@@ -61,5 +61,6 @@ typedef struct client_connection_data{
 
 
 void pop3_passive_handler(struct selector_key *key);
+void destroy_all_connections();
 
 #endif

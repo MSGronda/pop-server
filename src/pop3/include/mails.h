@@ -61,6 +61,7 @@ void delete_mail(buffer * write_buffer, user_mail_info * mail_info, char * arg);
 void restore_mail(buffer * write_buffer, user_mail_info * mail_info);
 int retrieve_mail(struct selector_key *key, char * maildir);
 void free_mail_info(struct selector_key *key);
+void free_mail_info_no_key(client_connection_data * client_data);
 int user_file_name(char ** file_name, char * username, char * maildir);
 
 #endif

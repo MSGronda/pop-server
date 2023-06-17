@@ -1,7 +1,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "../pop3/include/pop3.h"
+#include "../pop3/include/users.h"
 #include "./include/server.h"
+
 
 struct pop3_server_state server_state;
 
@@ -51,9 +54,12 @@ bool initialize_server_state(){
     return true;
 }
 
-void destroy_server_state(){
+void free_server_resources(){
     server_state.running = false;
 
+    destroy_all_connections();
+
+    free_users();
     free(server_state.users);
 }
 
