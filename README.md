@@ -47,22 +47,26 @@ Para conectarse al servidor principal, es necesario establecer una conexión TCP
 Para conectarse al servidor de monitoreo y configuración se debe ejecutar el ejecutable `client.out` en el subdirectorio client (/src/client/) indicando como argumento, primero la dirección ip donde se esta ejecutando el servidor principal (127.0.0.1) y segundo el puerto donde el servidor escucha las conexiones de m3 (por defecto 55552).
 ## Funciones de pop3 soportadas
 A continuación, un listado de ellas (no son sensibles a mayusculas, entre <> obligatorio, [ ] opcional ):
-* USER <user\>
-* PASS <pass\>
-* CAPA
-* STAT
-* LIST [msg]
-* RETR <msg\>
-* DELE <msg\>
-* RSET
-* NOOP
-* QUIT
+| Comando | Descripción |
+|---------|---------|
+| - USER <user\>  | - establece el nombre de usuario para iniciar sesion |
+| - PASS <pass\>  | - establece la contraseña para el usuario elegido en USER |
+| - CAPA  | - devuelve una lista de los comandos que se pueden ejecutar |
+| - STAT  | - devuelve la cantidad de mensajes y octetos actuales de la casilla |
+| - LIST [msg] | - devuelve la cantidad de mensajes y octetos totales de la casilla o la cantidad de octetos del mensaje elegido |
+| - RETR <msg\>  | - devuelve el mensaje elegido |
+| - DELE <msg\>  | - borra el mensaje elegido |
+| - RSET  | - reincorpora todos los mensajes eliminados |
+| - NOOP  | - devuelve un mensaje |
+| - QUIT  | - cierra la conexión del usuario |
 ## Funciones de monitoreo
-* help
-* noop
-* btsent
-* btrec
-* currusers
-* hisusers
-* adduser
-* quit
+| Comando | Descripción |
+|---------|---------|
+| - help  | - devuelve los comandos que se pueden ejecutar |
+| - noop  | - devuelve un mensaje |
+| - btsent  | - devuelve la cantidad de bytes enviados por el servidor |
+| - btrec  | - devuelve la cantidad de bytes recibidos por el servidor |
+| - currusers  | - devuelve la cantidad de usuarios conectados en el servidor |
+| - hisusers  | - devuelve la cantidad de usuarios que se conectaron al servidor |
+| - adduser <usuario\:contraseña> | - agrega un usuario al servidor |
+| - quit  | - cierra la conexión del usuario |
