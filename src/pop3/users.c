@@ -28,7 +28,8 @@ bool add_user(char *s) {
     server_state->amount_users++;
 
     char * p = strchr(s, ':');
-    if(p == NULL) 
+    //EXP: Chequeamos que haya caracter ':' y que haya un username
+    if(p == NULL || s == p) 
         return false;
 
     // EXP: null termination y hago que p apuente a la password

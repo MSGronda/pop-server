@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include "../server/include/m3.h"
 #include "./include/client.h"
+#include <ctype.h>
 
 #define BUFF_SIZE 1024
 
@@ -69,11 +70,13 @@ int main(int argc, char * argv[]) {
     }
 
     char read_buffer[100];
+    char * param;
 
     int loop = 1;
     int id = 0;
 
     while(loop) {
+        printf("> ");
         int operation;
         memset(read_buffer, 0, 100);
         fgets(read_buffer, 100, stdin);
@@ -90,9 +93,27 @@ int main(int argc, char * argv[]) {
             operation = 3;
         } else if(strcmp(read_buffer,"hisusers") == 0) {
             operation = 2;
-        } else if(strcmp(read_buffer,"adduser") == 0) {
+        } else if(strncmp(read_buffer,"adduser ", strlen("adduser ")) == 0) {
+            char * inBetween = strchr(read_buffer, ':');
+
+            if( inBetween == NULL){
+                printf("Error, invalid parameters\n");
+                continue;
+            }
+               
+            param = read_buffer + strlen("adduser ");
+            if( isspace(*param) ){
+                printf("Error, this command doesn't ignore blanks\n");
+                continue;
+            }
+            char * aux = param;
+            while(*aux && !isspace(*aux)){
+                aux++;
+            }
+            if( *aux){
+                *aux = '\0';
+            }
             operation = 4;
-            continue;
         } else if(strcmp(read_buffer,"noop") == 0) {
             operation = 5;
         } else if(strcmp(read_buffer,"quit") == 0) {
@@ -111,6 +132,12 @@ int main(int argc, char * argv[]) {
         request.op_code = operation;
         request.request_id = id;
         request.length = 0;
+
+        if( operation == 4){
+            strcpy((char *)request.data, param);
+            printf("%s\n", request.data);
+            request.length = strlen((char *)request.data);
+        }
 
         size_t request_len;
         mng_request_to_buffer(&request, buffer, &request_len);
