@@ -79,21 +79,33 @@ unsigned int num_string_size(size_t num){
     return i;
 }
 
-bool write_multiline_end(buffer * write_buffer){
+bool write_terminating(char * terminating, buffer * write_buffer){
     size_t write_max;
     uint8_t * ptr = buffer_write_ptr(write_buffer, &write_max);
-    char * delimiter = "\r\n.\r\n";                                 // TODO: CHECK THIS WITH JOSE
-    size_t len = strlen(delimiter);
+    size_t len = strlen(terminating);
 
     // EXP: solo escribimos si tenemos espacio para escribir el mensaje completo 
     if(write_max < len){
         return false;
     }
     
-    memcpy(ptr, delimiter, len);
+    memcpy(ptr, terminating, len);
 
     buffer_write_adv(write_buffer, len);
     return true;
+}
+
+bool write_multiline_end(buffer * write_buffer){
+    return write_terminating(".\r\n", write_buffer);
+}
+
+bool write_multiline_end_file(buffer * write_buffer, stuffing_parser * parser){
+    // EXP: protegemos contra si el mail esta mal formado y no tiene \r\n en la ultima linea 
+
+    if(parser->prev != '\n' || parser->second_prev != '\r')
+        return write_terminating("\r\n.\r\n", write_buffer);
+    
+    return write_terminating(".\r\n", write_buffer);
 }
 
 // = = = = = = =<   INICIALIZACION Y DESTRUCCION  >= = = = = = = 

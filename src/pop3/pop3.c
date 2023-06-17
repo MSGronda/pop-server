@@ -158,7 +158,7 @@ bool pop3_interpret_command(client_connection_data * client_data){
 
     // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
     // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
-    bool finished = 0;          // TODO: check esto porque si o si hay que inicializarlo en 0
+    bool finished = 0;
     size_t consumed = 0;
     parser_consume(&client_data->command_parser, &client_data->read_buffer, &finished, &consumed);
 
@@ -218,15 +218,19 @@ void pop3_write_handler(struct selector_key *key) {
             pop3_action_handler(key);
         }
         else{
-            // TODO: check error
             // EXP: el comando que lei esta incompleto, espero a que el usuario mande algo
-            selector_set_interest_key(key, OP_READ);
+            if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS){
+                log(ERROR, "%s", "Error setting interest from OP_WRITE to OP_READ")
+                return;
+            }
         }
     }
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
     else if(!buffer_can_read(&client_data->write_buffer)){
-        // TODO: check error
-        selector_set_interest_key(key, OP_READ);
+        if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS){
+            log(ERROR, "%s", "Error setting interest from OP_WRITE to OP_READ")
+            return;
+        }
     }
     
     if(client_data->state == CLIENT_FINISHED){
@@ -278,7 +282,7 @@ void pop3_passive_handler(struct selector_key *key) {
 
     // = = = = = CONFIGURACION DEL SOCKET DE CLIENTE = = = = = =
 
-    // EXP: saco el cliente del queue y genero un socket activo 
+    // EXP: saco el cliente del queue y genero un socket activo OP_WRITE
     client_fd = accept(key->fd, (struct sockaddr *)&client_address, &client_address_len);
 
     if(client_fd == -1) {
