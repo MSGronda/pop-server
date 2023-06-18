@@ -20,7 +20,7 @@
 // = = = =  Actions = = = =  
 
 // EXP: puntero a funcion que ejecuta la accion
-typedef int (*pop3_action)(struct selector_key *key );
+typedef int (*pop3_action)(struct selector_key *key);
 
 typedef struct pop3_action_type{
      command_type type;
@@ -65,7 +65,7 @@ static const pop3_action_type transaction_actions[] = {
      {.type = CMD_RSET, .handle = &pop3_rset},
 };
 
-pop3_action find_action(command_type command, const pop3_action_type * actions, size_t size){
+pop3_action find_action(command_type command, const pop3_action_type * actions, size_t size) {
      for(size_t i=0; i<size; i++) {
           if(actions[i].type == command) {
                return actions[i].handle;
@@ -86,7 +86,7 @@ void pop3_action_handler(struct selector_key *key) {
      }
      else{
           // EXP: busco y ejecuto el comando adecuado. si no es un comando valido para dicho estado, se ejecuta el pop3_invalid_command_action
-          switch(client_data->state){
+          switch(client_data->state) {
                case AUTH_INI:
                     action = find_action(command, auth_ini_actions, sizeof(auth_ini_actions)/sizeof(pop3_action_type));
                     break;
@@ -109,13 +109,13 @@ void pop3_action_handler(struct selector_key *key) {
      client_data->command.finished =  action(key);
 
      // EXP: reseteo comando 
-     if(client_data->command.finished){
+     if(client_data->command.finished) {
           client_data->command.bytes_written = 0;
      }
 }
 
 // EXP: pasamos el selector_key (y no solo el client_data) dado que hay comandos que necesitan ese selector_key, ej: RETR
-void pop3_continue_action(struct selector_key *key){
+void pop3_continue_action(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
 
      command_type command = client_data->command.command_num;
@@ -124,7 +124,7 @@ void pop3_continue_action(struct selector_key *key){
      client_data->command.finished =  find_action(command, transaction_actions, sizeof(transaction_actions)/sizeof(pop3_action_type))(key);
 
      // EXP: reseteo comando 
-     if(client_data->command.finished){
+     if(client_data->command.finished) {
           client_data->command.bytes_written = 0;
      }
 }
@@ -142,7 +142,7 @@ int pop3_invalid_command_action(struct selector_key *key) {
      buffer_write_n(&client_data->write_buffer, msg, len);
      return true;      
 }    
-int pop3_noop(struct selector_key *key){
+int pop3_noop(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "+OK\r\n";
      size_t len = strlen(msg);
@@ -151,7 +151,7 @@ int pop3_noop(struct selector_key *key){
      return true;
 }
 
-int pop3_capa(struct selector_key *key){
+int pop3_capa(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "+OK\r\nCAPA\r\nPIPELINING\r\nUSER\r\n.\r\n";
      size_t len = strlen(msg);
@@ -161,7 +161,7 @@ int pop3_capa(struct selector_key *key){
      return true;
 }
 
-int pop3_user(struct selector_key *key){
+int pop3_user(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
 
      client_data->state = AUTH_PASSWORD;
@@ -181,21 +181,21 @@ int pop3_user(struct selector_key *key){
      return true;
 }
 
-int pop3_pass(struct selector_key *key){
+int pop3_pass(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      user_status status = login_user(client_data->username, client_data->command_parser.current_command.argument);
 
-     if (!status) {
+     if(!status) {
           char * maildir = get_server_state()->folder_address;
           unsigned int resp = initialize_mails(client_data, client_data->username, maildir);
 
-          if(resp == ERROR_DIR){
+          if(resp == ERROR_DIR) {
               client_data->mail_info->is_dir_valid = false;
                log(ERROR, "%s", "Error loading mail data for client due to: directory error")
           }
           else if(resp != MAILS_SUCCESS) {
                client_data->mail_info->is_dir_valid = false;
-               log(ERROR,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error" )
+               log(ERROR,"Error loading mail data for client due to: %s", resp == ERROR_ALLOC ? "allocation error" : "file stat error")
           }
 
           char * answer = "+OK\r\n";
@@ -220,7 +220,7 @@ int pop3_pass(struct selector_key *key){
 
 int pop3_list(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
-     if(client_data->command_parser.args_count == 0){
+     if(client_data->command_parser.args_count == 0) {
           return list_mails(&client_data->write_buffer, client_data->mail_info, &client_data->command.bytes_written);
      }
      else{
@@ -251,7 +251,7 @@ int pop3_quit(struct selector_key *key) {
           int err = 0;
           int user_base_len = user_file_name(&user_maildir, client_data->username, maildir);
 
-          if(user_base_len > 0){
+          if(user_base_len > 0) {
                for(size_t i = 0; i < client_data->mail_info->mail_count ; i++) {
                     if(client_data->mail_info->mails[i].state == 0) {
 

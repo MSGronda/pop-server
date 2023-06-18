@@ -13,7 +13,7 @@
 /**
  * selector.c - un muliplexor de entrada salida
  */
-#define N(x) (sizeof(x)/sizeof((x)[0]))
+#define N(x)(sizeof(x)/sizeof((x)[0]))
 
 #define ERROR_DEFAULT_MSG "something failed"
 
@@ -21,7 +21,7 @@
 const char *
 selector_error(const selector_status status) {
     const char *msg;
-    switch (status) {
+    switch(status) {
         case SELECTOR_SUCCESS:
             msg = "Success";
             break;
@@ -70,7 +70,7 @@ selector_init(const struct selector_init *c) {
     //    select
     sigemptyset(&blockset);
     sigaddset(&blockset, conf.signal);
-    if (-1 == sigprocmask(SIG_BLOCK, &blockset, NULL)) {
+    if(-1 == sigprocmask(SIG_BLOCK, &blockset, NULL)) {
         ret = SELECTOR_IO;
         goto finally;
     }
@@ -79,7 +79,7 @@ selector_init(const struct selector_init *c) {
     //    del selector.
     //    Esta interrupción es útil en entornos multi-hilos.
 
-    if (sigaction(conf.signal, &act, 0)) {
+    if(sigaction(conf.signal, &act, 0)) {
         ret = SELECTOR_IO;
         goto finally;
     }
@@ -122,7 +122,7 @@ struct blocking_job {
 static const int FD_UNUSED = -1;
 
 /** verifica si el item está usado */
-#define ITEM_USED(i) ( ( FD_UNUSED != (i)->fd) )
+#define ITEM_USED(i) ((FD_UNUSED != (i)->fd))
 
 struct fdselector {
     // almacenamos en una jump table donde la entrada es el file descriptor.

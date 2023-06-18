@@ -31,7 +31,7 @@ client_connection_data * find_previous_connection(client_connection_data * clien
     if(connection_pool == NULL) {
         return NULL;
     }
-    if(connection_pool == client_data){
+    if(connection_pool == client_data) {
         return client_data;
     }
 
@@ -111,10 +111,10 @@ client_connection_data * setup_new_connection(int client_fd, struct sockaddr_sto
     return new_connection;
 }
 
-void destroy_connection_info(client_connection_data * client_data){
+void destroy_connection_info(client_connection_data * client_data) {
 
     // EXP: desactivo flag para indicar que usuario no esta logueado
-    if( client_data->username != NULL){
+    if(client_data->username != NULL) {
         logout_user(client_data->username);
     }
 
@@ -124,26 +124,26 @@ void destroy_connection_info(client_connection_data * client_data){
     if(previous == NULL) {
         connection_pool = NULL;
     }
-    else if (previous == client_data){
+    else if(previous == client_data) {
         connection_pool = client_data->next;
     }
     else {
         previous->next = client_data->next;
     }
-    if(client_data->command_parser.current_command.argument != NULL){
+    if(client_data->command_parser.current_command.argument != NULL) {
         free(client_data->command_parser.current_command.argument);
     }
-    if(client_data->username != NULL){
+    if(client_data->username != NULL) {
         free(client_data->username);
     }
-    if(client_data->mail_info != NULL){
+    if(client_data->mail_info != NULL) {
         free(client_data->mail_info);
     }
     free(client_data);
 }
 
-void destroy_all_connections(){
-    while(connection_pool != NULL){
+void destroy_all_connections() {
+    while(connection_pool != NULL) {
         if(connection_pool->client_fd != -1) {
             close(connection_pool->client_fd);
         }
@@ -154,7 +154,7 @@ void destroy_all_connections(){
 }
 
 
-bool pop3_interpret_command(client_connection_data * client_data){
+bool pop3_interpret_command(client_connection_data * client_data) {
 
     // EXP: hacemos la escritura al buffer  y luego la lecutra (en el parser)
     // EXP: en 2 pasos pues puede ya haber (de una transmision anterior) en el buffer
@@ -181,7 +181,7 @@ void pop3_read_handler(struct selector_key *key) {
 
     bool complete_command = pop3_interpret_command(client_data);
 
-    if(complete_command){
+    if(complete_command) {
         // EXP: ejecuto el comando y me paso para escribir respuesta
         pop3_action_handler(key);
         selector_set_interest_key(key, OP_WRITE);
@@ -207,33 +207,33 @@ void pop3_write_handler(struct selector_key *key) {
     // EXP: usamos else if para obligar que primero escriba al socket antes de continuar
 
     // EXP: no termino de ejecutarse el comando (por falta de espacio en el buffer), continuo    
-    if(!client_data->command.finished){
+    if(!client_data->command.finished) {
         pop3_continue_action(key);
     }
     // EXP: todavia hay comandos en el buffer de lectura (por pipelining), hay que consumir y ejecutar
-    else if(buffer_can_read(&client_data->read_buffer)){
+    else if(buffer_can_read(&client_data->read_buffer)) {
         bool complete_command = pop3_interpret_command(client_data);
 
-        if(complete_command){
+        if(complete_command) {
             pop3_action_handler(key);
         }
         else{
             // EXP: el comando que lei esta incompleto, espero a que el usuario mande algo
-            if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS){
+            if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
                 log(ERROR, "%s", "Error setting interest from OP_WRITE to OP_READ")
                 return;
             }
         }
     }
     // EXP: puede mandar todo. ahora tengo que esperar hasta que el usuario mande algo
-    else if(!buffer_can_read(&client_data->write_buffer)){
-        if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS){
+    else if(!buffer_can_read(&client_data->write_buffer)) {
+        if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
             log(ERROR, "%s", "Error setting interest from OP_WRITE to OP_READ")
             return;
         }
     }
     
-    if(client_data->state == CLIENT_FINISHED){
+    if(client_data->state == CLIENT_FINISHED) {
         pop3_close_handler(key);
     }
 }
@@ -245,7 +245,7 @@ void pop3_close_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
 
     // EXP: debemos hacer esto porque selector_unregister_fd llama al close handler cuando termina
-    if(!client_data->active){
+    if(!client_data->active) {
         return;
     }
     client_data->active = 0;
@@ -316,10 +316,10 @@ void pop3_passive_handler(struct selector_key *key) {
 finally:
     log(ERROR, "%s", error_msg);
 
-    if(client_fd != -1){
+    if(client_fd != -1) {
         close(client_fd);
     }
-    if(new_client != NULL){
+    if(new_client != NULL) {
         destroy_connection_info(new_client);
     }
 }

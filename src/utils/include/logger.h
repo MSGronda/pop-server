@@ -21,5 +21,5 @@ char * levelDescription(LOG_LEVEL level);
 	fprintf (stderr, "%s: %s:%d, ", levelDescription(level), __FILE__, __LINE__); \
 	fprintf(stderr, fmt, ##__VA_ARGS__); \
 	fprintf(stderr,"\n"); }\
-	if ( level==FATAL) exit(1);}
+	if (level==FATAL) exit(1);}
 #endif

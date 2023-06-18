@@ -117,7 +117,7 @@ typedef enum {
 /**
  * Quita un interés de una lista de intereses
  */
-#define INTEREST_OFF(FLAG, MASK)  ( (FLAG) & ~(MASK) )
+#define INTEREST_OFF(FLAG, MASK)  ((FLAG) & ~(MASK))
 
 /**
  * Argumento de todas las funciones callback del handler

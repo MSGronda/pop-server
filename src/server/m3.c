@@ -12,7 +12,7 @@
 
 // EXP: debemos convertir de Big Endian (que se usa en UDP) a Little Endian (para usar en C) y vice versa
 
-void mng_buffer_to_request(uint8_t * request, mng_request * converted){
+void mng_buffer_to_request(uint8_t * request, mng_request * converted) {
   
     size_t offset = 0;
 
@@ -38,7 +38,7 @@ void mng_buffer_to_request(uint8_t * request, mng_request * converted){
     memcpy(converted->data, request + offset, converted->length);
 }
 
-void mng_response_to_buffer(mng_response * response, uint8_t * converted, size_t * converted_len){
+void mng_response_to_buffer(mng_response * response, uint8_t * converted, size_t * converted_len) {
 
     size_t offset = 0;
 

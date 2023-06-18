@@ -19,43 +19,43 @@
 
 typedef uint8_t (*mng_action)(mng_request * request, mng_response * response);
 
-uint8_t mng_get_bytes_sent(mng_request * request, mng_response * response){
+uint8_t mng_get_bytes_sent(mng_request * request, mng_response * response) {
     uint32_t sent = get_server_state()->metrics.bytes_sent;
     memcpy(response->data, &sent, sizeof(sent));
     response->length = sizeof(sent);
     return MNG_SUCCESS;
 }
-uint8_t mng_get_bytes_recieved(mng_request * request, mng_response * response){
+uint8_t mng_get_bytes_recieved(mng_request * request, mng_response * response) {
     uint32_t recieved = get_server_state()->metrics.bytes_recieved;
     memcpy(response->data, &recieved, sizeof(recieved));
     response->length = sizeof(recieved);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_get_total_connections(mng_request * request, mng_response * response){
+uint8_t mng_get_total_connections(mng_request * request, mng_response * response) {
     uint32_t total_connections = get_server_state()->metrics.total_connections;
     memcpy(response->data, &total_connections, sizeof(total_connections));
     response->length = sizeof(total_connections);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_get_curr_connections(mng_request * request, mng_response * response){
+uint8_t mng_get_curr_connections(mng_request * request, mng_response * response) {
     uint32_t curr_connections = get_server_state()->metrics.current_connections;
     memcpy(response->data, &curr_connections, sizeof(curr_connections));
     response->length = sizeof(curr_connections);
     return MNG_SUCCESS;
 }
 
-uint8_t mng_noop(mng_request * request, mng_response * response){
+uint8_t mng_noop(mng_request * request, mng_response * response) {
     response->length = 0;
     return MNG_SUCCESS;
 }
 
-uint8_t mng_add_user(mng_request * request, mng_response * response){
+uint8_t mng_add_user(mng_request * request, mng_response * response) {
 
     bool success = add_user((char *) request->data);
 
-    if(!success){
+    if(!success) {
         return MNG_INVALID_ARGS;
     }
 
@@ -75,7 +75,7 @@ static const mng_action mng_v1_actions[] = {
 };
 
 
-void mng_handle_request(mng_request * request, mng_response * response){
+void mng_handle_request(mng_request * request, mng_response * response) {
 
     memset(response, 0, sizeof(mng_response));
 
@@ -90,17 +90,17 @@ void mng_handle_request(mng_request * request, mng_response * response){
     response->request_id = request->request_id;
 
     // EXP: el servidor maneja UNA sola version del protocolo de monitoreo, si no es la adecuada, no lo acepta
-    if(request->version != MNG_V1){
+    if(request->version != MNG_V1) {
         response->status = MNG_INVALID_VERSION;
         return;
     }
 
-    if(request->auth_token != AUTH_TOKEN){
+    if(request->auth_token != AUTH_TOKEN) {
         response->status = MNG_INVALID_TOKEN;
         return;
     }
 
-    if(request->op_code > MNG_NOOP){
+    if(request->op_code > MNG_NOOP) {
         response->status = MNG_INVALID_OP_CODE;
         return;
     }
@@ -114,7 +114,7 @@ void mng_handle_request(mng_request * request, mng_response * response){
     response->status = status;
 }
 
-void mng_passive_handler(struct selector_key *key){
+void mng_passive_handler(struct selector_key *key) {
   
     // EXP: necesito guardarme el address del cliente para despues poder mandarle la respuesta.
     struct sockaddr_storage client_address;
@@ -131,7 +131,7 @@ void mng_passive_handler(struct selector_key *key){
 
     ssize_t recieved_count = recvfrom(key->fd, read_buffer, UDP_BUFFER_SIZE, 0, (struct sockaddr *)&client_address, &client_address_len);
 
-    if(recieved_count < 0){
+    if(recieved_count < 0) {
         log(DEBUG, "%s", "Error recieving data from management socket (UDP)")
         return;
     }

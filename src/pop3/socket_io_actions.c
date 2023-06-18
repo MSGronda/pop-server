@@ -52,7 +52,7 @@ unsigned int socket_write(struct selector_key *key) {
     uint8_t * buffer = buffer_read_ptr(&client_data->write_buffer, &write_max);
     ssize_t sent_count = send(key->fd, buffer, write_max, MSG_NOSIGNAL);
 
-    if(sent_count == -1){
+    if(sent_count == -1) {
         return SOCKET_ERROR;
     }
 

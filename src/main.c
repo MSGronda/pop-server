@@ -29,7 +29,7 @@
 
 #define SOCKET_FAILED -1
 
-int generate_socket(int type, int protocol, int port, fd_selector selector, fd_handler * handlers, char ** msg){
+int generate_socket(int type, int protocol, int port, fd_selector selector, fd_handler * handlers, char ** msg) {
 
     // EXP: usamos IPv6 directamente porque puede aceptar conexiones IPv4 y IPv6 al mismo tiempo.
     
@@ -52,13 +52,13 @@ int generate_socket(int type, int protocol, int port, fd_selector selector, fd_h
     address.sin6_addr = in6addr_any;                     // any address TODO: check
 
     // EXP: bindeo el socket
-    if (bind(socket_fd, (struct sockaddr *) &address, sizeof(address)) < 0) {
+    if(bind(socket_fd,(struct sockaddr *) &address, sizeof(address)) < 0) {
         *msg = "Error binding passive socket";
         return SOCKET_FAILED;
     }
 
-    if(type == SOCK_STREAM){
-        // EXP: pongo para escuchar el socket (solo en TCP)
+    if(type == SOCK_STREAM) {
+        // EXP: pongo para escuchar el socket(solo en TCP)
         if(listen(socket_fd, MAX_PENDING_CONNECTIONS) < 0) {
             *msg = "Error binding passive socket";
             return SOCKET_FAILED;
@@ -116,7 +116,7 @@ int main(int argc, char * argv[]) {
         }
     };
     init_status = selector_init(&configuration);
-    if (init_status != 0) {
+    if(init_status != 0) {
         ERROR_CATCH("Error initializing selector library", finally)
     }
 
@@ -136,7 +136,7 @@ int main(int argc, char * argv[]) {
     
     pop3_socket_fd = generate_socket(SOCK_STREAM, IPPROTO_TCP, server_state->port, selector, &pop3_handlers, &error_msg);
 
-    if(pop3_socket_fd == SOCKET_FAILED){
+    if(pop3_socket_fd == SOCKET_FAILED) {
         goto finally;
     }
     else{
@@ -172,27 +172,27 @@ int main(int argc, char * argv[]) {
 finally:
     ret = error_msg == NULL ? 1 : 0;
 
-    if(error_msg != NULL){
+    if(error_msg != NULL) {
         log(FATAL,"%s", error_msg);
     }
     else{
         log(INFO, "%s", "Server finished execution successfully")
     }
 
-    if(selector != NULL){
+    if(selector != NULL) {
         selector_destroy(selector);
     }
-    if(init_status != SELECTOR_SUCCESS){
+    if(init_status != SELECTOR_SUCCESS) {
         selector_close();
     }
-    if(pop3_socket_fd > 0){
+    if(pop3_socket_fd > 0) {
         close(pop3_socket_fd);
     }
-    if(mng_socket_fd > 0){
+    if(mng_socket_fd > 0) {
         close(mng_socket_fd);
     }
 
-    if(server_state_initialized != false){
+    if(server_state_initialized != false) {
         free_server_resources();
     }
 

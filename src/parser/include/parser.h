@@ -58,6 +58,6 @@ void parser_init(input_parser * parser);
 command_state parser_feed(input_parser * parser, const char c, bool * finished);
 
 // Consume de a multiples caracteres. Se le pasa un buffer de la libreria. Va guardando un estado interno del comando posible actual
-command_state parser_consume(input_parser * parser, buffer* buffer, bool * finished,size_t * n_consumed);
+command_state parser_consume(input_parser * parser, buffer* buffer, bool * finished, size_t * n_consumed);
 
 #endif

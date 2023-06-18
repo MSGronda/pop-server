@@ -15,8 +15,8 @@
 
 static void help();
 static void handle_request(int operation, char * param, int * id, int connection, int socket_fd, 
-                            struct sockaddr_in server_address, struct sockaddr_in6 server_address6, socklen_t server_address_len );
-static bool parse_add_user_param( char read_buffer[], char ** param);
+                            struct sockaddr_in server_address, struct sockaddr_in6 server_address6, socklen_t server_address_len);
+static bool parse_add_user_param(char read_buffer[], char ** param);
 
 
 int main(int argc, char * argv[]) {
@@ -51,11 +51,11 @@ int main(int argc, char * argv[]) {
     }
 
     
-    if (inet_pton(AF_INET, server_ip, &server_address.sin_addr.s_addr) > 0) {
+    if(inet_pton(AF_INET, server_ip, &server_address.sin_addr.s_addr) > 0) {
         server_address.sin_family = AF_INET;
         server_address.sin_port = server_port;
         connection = 4;
-    } else if (inet_pton(AF_INET6, server_ip, &server_address6.sin6_addr) > 0) {
+    } else if(inet_pton(AF_INET6, server_ip, &server_address6.sin6_addr) > 0) {
         server_address6.sin6_family = AF_INET6;
         server_address6.sin6_port = server_port;
         connection = 6;
@@ -68,7 +68,7 @@ int main(int argc, char * argv[]) {
     // Create socket
     int connection_type = connection == 4 ? AF_INET : AF_INET6;
     socket_fd = socket(connection_type, SOCK_DGRAM, 0);
-    if (socket_fd < 0) {
+    if(socket_fd < 0) {
         perror("Failed to create socket\n");
         exit(EXIT_FAILURE);
     }
@@ -99,7 +99,7 @@ int main(int argc, char * argv[]) {
             operation = MNG_GET_TOTAL_CONNECTIONS;
         } else if(strncmp(read_buffer,"adduser ", strlen("adduser ")) == 0) {
             bool success = parse_add_user_param(read_buffer, &param);
-            if( !success)
+            if(!success)
                 continue;
             operation = MNG_ADD_USER;
         } else if(strcmp(read_buffer,"noop") == 0) {
@@ -110,7 +110,7 @@ int main(int argc, char * argv[]) {
             printf("Error, no matching command found\n");
             continue;
         }
-        if( operation != MNG_ADD_USER)
+        if(operation != MNG_ADD_USER)
             handle_request(operation, NULL, &id, connection, socket_fd, server_address, server_address6, server_address_len);
         else    
             handle_request(operation, param, &id, connection, socket_fd, server_address, server_address6, server_address_len);
@@ -123,7 +123,7 @@ int main(int argc, char * argv[]) {
 }
 
 static void help() {
-    printf( "+-------------------------------------------+\n"
+    printf("+-------------------------------------------+\n"
             "|Possible commands for client admin in m3   |\n"
             "+-------------------------------------------+\n"
             "|`help`: prints help table                  |\n"
@@ -138,7 +138,7 @@ static void help() {
 }
 
 static void handle_request(int operation, char * param, int * id, int connection, int socket_fd, 
-                            struct sockaddr_in server_address, struct sockaddr_in6 server_address6, socklen_t server_address_len ){
+                            struct sockaddr_in server_address, struct sockaddr_in6 server_address6, socklen_t server_address_len) {
     uint8_t buffer[BUFF_SIZE];
     mng_request request;
     request.version = MNG_V1;
@@ -147,7 +147,7 @@ static void handle_request(int operation, char * param, int * id, int connection
     request.request_id = *id;
     request.length = 0;
 
-    if( operation == MNG_ADD_USER){
+    if(operation == MNG_ADD_USER) {
         strcpy((char *)request.data, param);
         request.length = strlen((char *)request.data);
     }
@@ -161,7 +161,7 @@ static void handle_request(int operation, char * param, int * id, int connection
     } else {
         numBytesSent = sendto(socket_fd, buffer, request_len, 0, (struct sockaddr*)&server_address6, server_address_len);
     }
-    if (numBytesSent < 0) {
+    if(numBytesSent < 0) {
         perror("Failed to send packet");
         exit(EXIT_FAILURE);
     }
@@ -176,7 +176,7 @@ static void handle_request(int operation, char * param, int * id, int connection
         recieved_count = recvfrom(socket_fd, buffer, BUFF_SIZE, 0, (struct sockaddr *)&server_address6, &server_address_len);
     }
 
-    if(recieved_count < 0){
+    if(recieved_count < 0) {
         perror("Failed to recieve packet");
         exit(EXIT_FAILURE);
     }
@@ -217,7 +217,7 @@ static void handle_request(int operation, char * param, int * id, int connection
     // printf("request_id: %d\n", response.request_id);
     // printf("length: %d\n", response.length);
 
-    switch (response.op_code)
+    switch(response.op_code)
     {
     case MNG_GET_BYTES_SENT:
         printf("Bytes sent: ");
@@ -242,30 +242,30 @@ static void handle_request(int operation, char * param, int * id, int connection
     }
 
     if(response.op_code == MNG_GET_BYTES_SENT || response.op_code == MNG_GET_BYTES_RECIEVED ||
-    response.op_code == MNG_GET_TOTAL_CONNECTIONS || response.op_code == MNG_GET_CURR_CONNECTIONS){
+    response.op_code == MNG_GET_TOTAL_CONNECTIONS || response.op_code == MNG_GET_CURR_CONNECTIONS) {
         uint32_t data = *((uint32_t *) response.data);
         printf("%d\n", data);
     }
 }
 
-static bool parse_add_user_param( char read_buffer[], char ** param){
+static bool parse_add_user_param(char read_buffer[], char ** param) {
     char * inBetween = strchr(read_buffer, ':');
 
-    if( inBetween == NULL){
+    if(inBetween == NULL) {
         printf("Error, invalid parameters\n");
         return false;
     }
         
     *param = read_buffer + strlen("adduser ");
-    if( isspace(**param) ){
+    if(isspace(**param)) {
         printf("Error, this command should have one blank space before the argument\n");
         return false;
     }
     char * aux = *param;
-    while(*aux && !isspace(*aux)){
+    while(*aux && !isspace(*aux)) {
         aux++;
     }
-    if( *aux){
+    if(*aux) {
         *aux = '\0';
     }
     return true;

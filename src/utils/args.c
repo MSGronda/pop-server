@@ -16,7 +16,7 @@ port(const char *s) {
      char *end     = 0;
      const long sl = strtol(s, &end, 10);
 
-     if (end == s|| '\0' != *end
+     if(end == s|| '\0' != *end
         || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno)
         || sl < 0 || sl > USHRT_MAX) {
          fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
@@ -52,18 +52,18 @@ usage(const char *progname) {
     exit(1);
 }
 
-void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_state){
+void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_state) {
 
     int c;
     int nusers = 0;
 
-    while(true){
+    while(true) {
 
         c = getopt(argc, argv, "hl:L:p:P:u:f:v");
-        if( c == -1 )
+        if(c == -1)
             break;
         
-        switch (c) {
+        switch(c) {
         case 'h':
             usage(argv[0]);
             break;
@@ -99,15 +99,15 @@ void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_
             exit(1);
         }
     }
-    if (optind < argc) {
+    if(optind < argc) {
         fprintf(stderr, "argument not accepted: ");
-        while (optind < argc) {
+        while(optind < argc) {
             fprintf(stderr, "%s ", argv[optind++]);
         }
         fprintf(stderr, "\n");
         exit(1);
     }
-    if (optind > argc)
+    if(optind > argc)
     {
         fprintf(stderr, "Expected argument after options\n");
         exit(EXIT_FAILURE);

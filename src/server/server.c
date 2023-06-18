@@ -10,34 +10,34 @@ struct pop3_server_state server_state;
 
 // = = = = = = = = =  SERVER METRICS  = = = = = = = = =
 
-void init_server_metrics(){
+void init_server_metrics() {
     server_state.metrics.total_connections = 0;
     server_state.metrics.current_connections = 0;
     server_state.metrics.bytes_sent = 0;
     server_state.metrics.bytes_recieved = 0;
 }
 
-void metrics_add_connection(){
+void metrics_add_connection() {
     server_state.metrics.current_connections++;
     server_state.metrics.total_connections++;
 }
 
-void metrics_remove_connection(){
+void metrics_remove_connection() {
     server_state.metrics.current_connections--;
 }
 
-void metrics_sent_bytes(uint32_t sent){
+void metrics_sent_bytes(uint32_t sent) {
     server_state.metrics.bytes_sent += sent;
 }
 
-void metrics_recieved_bytes(uint32_t recieved){
+void metrics_recieved_bytes(uint32_t recieved) {
     server_state.metrics.bytes_recieved += recieved;
 }
 
 
 // = = = = = = = = =  SERVER STATE  = = = = = = = = =
 
-bool initialize_server_state(){
+bool initialize_server_state() {
     memset(&server_state, 0, sizeof(struct pop3_server_state));
 
     server_state.running = true;
@@ -45,7 +45,7 @@ bool initialize_server_state(){
     server_state.mng_port = M3_STANDARD_PORT;
 
     server_state.users = malloc(MAX_USERS * sizeof(users_data));
-    if(server_state.users == NULL){
+    if(server_state.users == NULL) {
         return false;
     }
 
@@ -54,7 +54,7 @@ bool initialize_server_state(){
     return true;
 }
 
-void free_server_resources(){
+void free_server_resources() {
     server_state.running = false;
 
     destroy_all_connections();
