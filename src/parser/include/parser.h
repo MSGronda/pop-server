@@ -13,24 +13,18 @@
 #define ALL_CMD_SIZE  10
 
 typedef enum command_type {
-    CMD_NOT_RECOGNIZED     = -1,
-    CMD_USER               =  0,
-    CMD_PASS               =  1,
-    CMD_RETR               =  2,
-    CMD_LIST               =  3,
-    CMD_CAPA               =  4,
-    CMD_QUIT               =  5,
-    CMD_DELE               =  6,
-    CMD_NOOP               =  7,
-    CMD_STAT               =  8,
-    CMD_RSET               =  9,
+    CMD_NOT_RECOGNIZED = -1,
+    CMD_USER =  0,
+    CMD_PASS =  1,
+    CMD_RETR =  2,
+    CMD_LIST =  3,
+    CMD_CAPA =  4,
+    CMD_QUIT =  5,
+    CMD_DELE =  6,
+    CMD_NOOP =  7,
+    CMD_STAT =  8,
+    CMD_RSET =  9,
 } command_type;
-
-typedef struct command_instance {
-    command_type    type;
-    char *       argument;
-    bool         is_multi;
-} command_instance;
 
 typedef enum command_state {
     RECOGNITION_STATE,
@@ -39,9 +33,16 @@ typedef enum command_state {
     COMMAND_ERROR_STATE,
 } command_state;
 
+
+typedef struct command_instance {
+    command_type    type;
+    char *       argument;
+    bool         is_multi;
+} command_instance;
+
 typedef struct input_parser {
     int                 line_size;
-    int                 correctly_formed;  //0 NONE, 1 \r, 2 \n
+    int                 correctly_formed;
     int                 arg_length;
     int                 args_count;
     int                 invalid_size;
