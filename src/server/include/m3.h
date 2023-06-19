@@ -3,10 +3,9 @@
 
 #include <stdint.h>
 
-
-
 // EXP: el cliente debe usar este token para autenticarse
-#define AUTH_TOKEN 0x368F8339
+// EXP: este es el default. se deberia cambiar usando el comando:  export M3_AUTH_TOKEN=...
+#define DEFAULT_AUTH_TOKEN 0x368F8339
 
 #define MAX_DATA_LEN 256 * 2 + 10 
 

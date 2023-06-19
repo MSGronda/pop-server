@@ -142,7 +142,10 @@ static void handle_request(int operation, char * param, int * id, int connection
     uint8_t buffer[BUFF_SIZE];
     mng_request request;
     request.version = MNG_V1;
-    request.auth_token = AUTH_TOKEN;
+
+    char * token = getenv("M3_AUTH_TOKEN");
+    request.auth_token = token == NULL ? DEFAULT_AUTH_TOKEN : atoi(token); 
+
     request.op_code = operation;
     request.request_id = *id;
     request.length = 0;

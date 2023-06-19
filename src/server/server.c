@@ -3,6 +3,8 @@
 
 #include "../pop3/include/pop3.h"
 #include "../pop3/include/users.h"
+
+#include "./include/m3.h"
 #include "./include/server.h"
 
 
@@ -43,6 +45,9 @@ bool initialize_server_state() {
     server_state.running = true;
     server_state.port = STANDARD_PORT;
     server_state.mng_port = M3_STANDARD_PORT;
+
+    char * token = getenv("M3_AUTH_TOKEN");
+    server_state.mng_auth_token = token == NULL ? DEFAULT_AUTH_TOKEN : atoi(token); 
 
     server_state.users = malloc(MAX_USERS * sizeof(users_data));
     if(server_state.users == NULL) {

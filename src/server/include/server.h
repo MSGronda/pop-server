@@ -31,6 +31,7 @@ struct pop3_server_state {
     unsigned short port;
     char * folder_address;
     unsigned short mng_port;
+    uint32_t mng_auth_token;
 
     users_data * users;
     size_t amount_users;

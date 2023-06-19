@@ -95,7 +95,7 @@ void mng_handle_request(mng_request * request, mng_response * response) {
         return;
     }
 
-    if(request->auth_token != AUTH_TOKEN) {
+    if(request->auth_token != get_server_state()->mng_auth_token) {
         response->status = MNG_INVALID_TOKEN;
         return;
     }
