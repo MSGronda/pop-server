@@ -134,7 +134,11 @@ int pop3_invalid_command_action(struct selector_key *key) {
      char * msg = "-ERR invalid command\r\n";
      size_t len = strlen(msg);
 
-     send_back_to_ini(client_data);
+     if(client_data->state == AUTH_PASSWORD){
+          //en el caso de estar en auth, volver a AUTH_USER pues solo se puede iniciar sesion
+          //con comandos user pass adyacentes
+          send_back_to_ini(client_data);
+     }
 
      // en la mayoria de los casos que se usa buffer_write_n, se asume que hay suficiente espacio
      // en el buffer para escribir (al ser una longitud constant y pequena)
@@ -155,7 +159,11 @@ int pop3_capa(struct selector_key *key) {
      client_connection_data * client_data = ATTACHMENT(key);
      char * msg = "+OK\r\nCAPA\r\nPIPELINING\r\nUSER\r\n.\r\n";
      size_t len = strlen(msg);
-     send_back_to_ini(client_data);
+     if(client_data->state == AUTH_PASSWORD) { 
+          //en el caso de estar en auth, volver a AUTH_USER pues solo se puede iniciar sesion
+          //con comandos user pass adyacentes
+          send_back_to_ini(client_data);
+     }
 
      buffer_write_n(&client_data->write_buffer, msg, len);
      return true;

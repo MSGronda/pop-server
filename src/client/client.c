@@ -78,7 +78,7 @@ int main(int argc, char * argv[]) {
 
     int loop = 1;
     int id = 0;
-
+    help();
     while(loop) {
         printf("> ");
         int operation;
