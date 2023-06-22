@@ -36,7 +36,7 @@ bool add_user(char *s) {
     p++;
     
     //EXP: chequeo si existe un usuario con el mismo nombre
-    if(find_user(s) == -1) {
+    if(find_user(s) != -1) {
         return false;
     }
 
