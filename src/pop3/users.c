@@ -25,22 +25,29 @@ bool add_user(char *s) {
 
     users_data * user = &server_state->users[server_state->amount_users];
 
-    server_state->amount_users++;
 
     char * p = strchr(s, ':');
     //EXP: Chequeamos que haya caracter ':' y que haya un username
     if(p == NULL || s == p) 
         return false;
 
-    // EXP: null termination y hago que p apuente a la password
+    //EXP: null termination y hago que p apuente a la password
     *p = 0;
     p++;
+    
+    //EXP: chequeo si existe un usuario con el mismo nombre
+    if(find_user(s) == -1) {
+        return false;
+    }
+
+    server_state->amount_users++;
 
     char * name = malloc(MAX_NAME_SIZE);
     char * pass = malloc(MAX_NAME_SIZE);
     if(name == NULL || pass == NULL) {
         return false;
     }
+
     memset(name, 0, MAX_NAME_SIZE);
     memset(pass, 0, MAX_NAME_SIZE);
 

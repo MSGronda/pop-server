@@ -213,12 +213,6 @@ static void handle_request(int operation, char * param, int * id, int connection
             return;
             break;
     }
-    
-    // printf("version: %d\n", response.version);
-    // printf("status: %d\n", response.status);
-    // printf("op_code: %d\n", response.op_code);
-    // printf("request_id: %d\n", response.request_id);
-    // printf("length: %d\n", response.length);
 
     switch(response.op_code)
     {
@@ -255,7 +249,7 @@ static bool parse_add_user_param(char read_buffer[], char ** param) {
     char * inBetween = strchr(read_buffer, ':');
 
     if(inBetween == NULL) {
-        printf("Error, invalid parameters\n");
+        printf("Error, invalid arguments\n");
         return false;
     }
         

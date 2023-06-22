@@ -57,7 +57,7 @@ void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_
 
     while(true) {
 
-        c = getopt(argc, argv, "hl:L:p:P:u:f:v");
+        c = getopt(argc, argv, "hp:P:u:f:v");
         if(c == -1)
             break;
         
@@ -65,12 +65,6 @@ void parse_args(int argc, char * argv[], struct pop3_server_state * pop3_server_
         case 'h':
             usage(argv[0]);
             break;
-        // case 'l':
-
-        //     break;
-        // case 'L':
-
-        //     break;
         case 'p':
             pop3_server_state->port = port(optarg);
             break;
