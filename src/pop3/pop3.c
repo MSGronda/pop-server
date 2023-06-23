@@ -16,10 +16,8 @@
 
 // = = = = = FUNCTIONS = = = = = 
 void pop3_close_handler(struct selector_key *key);
-void pop3_block_handler(struct selector_key *key);
 void pop3_read_handler(struct selector_key *key);
 void pop3_write_handler(struct selector_key *key);
-
 
 
 // = = = = = SETUP ESTADO DE CLIENTE = = = = = 
@@ -237,9 +235,6 @@ void pop3_write_handler(struct selector_key *key) {
         pop3_close_handler(key);
     }
 }
-void pop3_block_handler(struct selector_key *key) {
-    printf("BLOCK");                                        // TODO: make 
-}
 
 void pop3_close_handler(struct selector_key *key) {
     client_connection_data * client_data = ATTACHMENT(key);
@@ -269,7 +264,7 @@ static const struct fd_handler pop3_handlers ={
     .handle_read = &pop3_read_handler,
     .handle_write = &pop3_write_handler,
     .handle_close = &pop3_close_handler,
-    .handle_block = &pop3_block_handler,
+    .handle_block = NULL
 };
 
 void pop3_passive_handler(struct selector_key *key) {
