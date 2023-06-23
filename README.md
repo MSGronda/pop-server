@@ -51,7 +51,7 @@ A continuación, un listado de ellas (no son sensibles a mayusculas, entre <> ob
 |---------|---------|
 | - USER <user\>  | - establece el nombre de usuario para iniciar sesion |
 | - PASS <pass\>  | - establece la contraseña para el usuario elegido en USER |
-| - CAPA  | - devuelve una lista de los comandos que se pueden ejecutar |
+| - CAPA  | - devuelve una lista de las funcionalidades disponibles |
 | - STAT  | - devuelve la cantidad de mensajes y octetos actuales de la casilla |
 | - LIST [msg] | - devuelve la cantidad de mensajes y octetos totales de la casilla o la cantidad de octetos del mensaje elegido |
 | - RETR <msg\>  | - devuelve el mensaje elegido |
