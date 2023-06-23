@@ -20,7 +20,7 @@ void mng_buffer_to_request(uint8_t * request, mng_request * converted) {
     converted->version = GET_UINT8(request);
     offset += sizeof(converted->version);
 
-    converted->auth_token = ntohl(GET_UINT32(request + offset));
+    converted->auth_token = GET_UINT32(request + offset);
     offset += sizeof(converted->auth_token);
 
     converted->op_code = GET_UINT8(request + offset);
@@ -29,7 +29,7 @@ void mng_buffer_to_request(uint8_t * request, mng_request * converted) {
     converted->request_id = GET_UINT8(request + offset);
     offset += sizeof(converted->request_id);
 
-    size_t len = ntohs(GET_UINT16(request + offset));
+    size_t len = GET_UINT16(request + offset);
     offset += sizeof(converted->length);
 
     // EXP: me protejo en contra de que me mande mas de lo permitido
@@ -54,7 +54,7 @@ void mng_response_to_buffer(mng_response * response, uint8_t * converted, size_t
     memcpy(converted + offset, &response->request_id, sizeof(response->request_id));
     offset += sizeof(response->request_id);
 
-    uint16_t length = htons(response->length);
+    uint16_t length = response->length;
     memcpy(converted + offset, &length, sizeof(response->length));
     offset += sizeof(length);
 
@@ -80,7 +80,7 @@ void mng_buffer_to_response(uint8_t * request, mng_response * converted) {
     converted->request_id = GET_UINT8(request + offset);
     offset += sizeof(converted->request_id);
 
-    uint16_t len = ntohs(GET_UINT16(request + offset));
+    uint16_t len = GET_UINT16(request + offset);
     offset += sizeof(uint16_t);
 
     // EXP: me protejo en contra de que me mande mas de lo permitido
@@ -95,7 +95,7 @@ void mng_request_to_buffer(mng_request * request, uint8_t * converted, size_t * 
     memcpy(converted + offset, &request->version, sizeof(request->version));
     offset += sizeof(request->version);
 
-    uint32_t token = htonl(request->auth_token);    
+    uint32_t token = request->auth_token;    
     memcpy(converted + offset, &token, sizeof(token));
     offset += sizeof(uint32_t);
 
@@ -105,7 +105,7 @@ void mng_request_to_buffer(mng_request * request, uint8_t * converted, size_t * 
     memcpy(converted + offset, &request->request_id, sizeof(request->request_id));
     offset += sizeof(request->request_id);
 
-    uint16_t len = htons(request->length);
+    uint16_t len = request->length;
     memcpy(converted + offset, &len, sizeof(uint16_t));
     offset += sizeof(request->length);
 
