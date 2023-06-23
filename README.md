@@ -31,6 +31,20 @@ El directorio raiz tiene 2 subdirectorios y 3 archivos. El primer directorio alb
 cabe destacar que cada subdirectorio cuenta con un archivo de make propio y un subdirectorio con los propios archivos de include.
 ## Construcción del proyecto
 Para construir el proyecto, desde el directorio principal moverse al subdirectorio `src`  y ejecutar el comando `make all` para generar los archivos objeto y ejecutables. `make clean` para eliminarlos.
+
+## Directorio maildir
+Se debe contar con un directorio con mails para cada usuario. El directorio debe sub-directorios, uno para cada cliente con el mismo nombre que el usuario. Dentro de estos sub-directorios se pueden encontrar los mails correspondientes a dicho usuario.
+
+Un ejemplo de la estructura:
+```
+maildir/
+    ├── marcos/
+    |     └── mail1
+    |
+    ├── maximo/
+          ├── a.txt
+          └── mail2            
+```
 ## Ejecución del proyecto
 El archivo con el nombre `server.out` es el enargado de inicializar el servidor principal. Dentro del directorio client, tambien se generara el archivo `client.out` que es el encargado que inicializar el cliente del servidor con el protocolo m3. El servidor tiene varias opciones y argumentos a ser utilizados para la configuración de este, siendo:
 * -h : imprime la ayuda y termina la ejecución.
