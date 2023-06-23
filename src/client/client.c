@@ -31,21 +31,15 @@ int main(int argc, char * argv[]) {
     struct sockaddr_in6 server_address6;
     socklen_t server_address_len = sizeof(server_address);
 
-    //const char* server_ip = "127.0.0.1";  // Replace with the target IP address
-    //int server_port = 25566;  // Replace with the target port number
+    memset(&server_address, 0, sizeof(server_address));
+    memset(&server_address6, 0, sizeof(server_address6));
 
     const char * server_ip = argv[1];
     int server_port = atoi(argv[2]);
     int connection;
 
-    
-
-    // Set up server address
-    memset(&server_address, 0, sizeof(server_address));
-    memset(&server_address6, 0, sizeof(server_address6));
-
-    // Get port
-    if((server_port = htons(atoi(argv[2]))) <= 0) {
+    // EXP: Convierto el puerto a big endian
+    if((server_port = htons(server_port)) <= 0) {
         perror("Invalid port\n");
         exit(EXIT_FAILURE);
     }
@@ -65,7 +59,7 @@ int main(int argc, char * argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Create socket
+    // EXP: Creamos el socket para comunicarnos con el servidor
     int connection_type = connection == 4 ? AF_INET : AF_INET6;
     socket_fd = socket(connection_type, SOCK_DGRAM, 0);
     if(socket_fd < 0) {
@@ -214,28 +208,27 @@ static void handle_request(int operation, char * param, int * id, int connection
             break;
     }
 
-    switch(response.op_code)
-    {
-    case MNG_GET_BYTES_SENT:
-        printf("Bytes sent: ");
-        break;
-    case MNG_GET_BYTES_RECIEVED:
-        printf("Bytes recieved: ");
-        break;
-    case MNG_GET_TOTAL_CONNECTIONS:
-        printf("Total historic connections: ");
-        break;
-    case MNG_GET_CURR_CONNECTIONS:
-        printf("Total current connections: ");
-        break;
-    case MNG_ADD_USER:
-        printf("User succesfully added\n");
-        break;
-    case MNG_NOOP:
-        printf("noop\n");
-        break;
-    default:
-        break;
+    switch(response.op_code){
+        case MNG_GET_BYTES_SENT:
+            printf("Bytes sent: ");
+            break;
+        case MNG_GET_BYTES_RECIEVED:
+            printf("Bytes recieved: ");
+            break;
+        case MNG_GET_TOTAL_CONNECTIONS:
+            printf("Total historic connections: ");
+            break;
+        case MNG_GET_CURR_CONNECTIONS:
+            printf("Total current connections: ");
+            break;
+        case MNG_ADD_USER:
+            printf("User succesfully added\n");
+            break;
+        case MNG_NOOP:
+            printf("noop\n");
+            break;
+        default:
+            break;
     }
 
     if(response.op_code == MNG_GET_BYTES_SENT || response.op_code == MNG_GET_BYTES_RECIEVED ||

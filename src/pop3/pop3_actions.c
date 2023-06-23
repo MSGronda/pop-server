@@ -253,7 +253,7 @@ int pop3_quit(struct selector_key *key) {
      char * msg = "+OK goodbye!\r\n";
 
      if(client_data->state == TRANSACTION && client_data->mail_info->is_dir_valid) {
-          // entering update state to delete mails
+          // EXP: borramos mails si es el caso
           char * maildir = get_server_state()->folder_address;
           char * user_maildir;
           int err = 0;
@@ -265,7 +265,7 @@ int pop3_quit(struct selector_key *key) {
 
                          strcpy(user_maildir + user_base_len, client_data->mail_info->mails[i].name);
                          int rm_state = remove(user_maildir);
-                         //rm_state is == 0 if it was correctly removed
+                         //rm_state es == 0 si fue correctamente removido
 
                          log(DEBUG, "User %s deleted mail %s", client_data->username, user_maildir)
 
