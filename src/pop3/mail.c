@@ -424,18 +424,16 @@ void mail_read_handler(struct selector_key *key) {
     user_mail_info * mail_info = ATTACHMENT_MAIL(key);
     
     if(!buffer_can_write(&mail_info->retrive_buffer)) {
+
+        // EXP: apago lectura de archivo dado que no tengo espacio en el retrieve_buffer
+        // EXP: se prendera devuelta cuando hay espacio
+        selector_set_interest(key->s, mail_info->filed_fd, OP_NOOP);
+
         return;
     }
 
     size_t read_max;   
     uint8_t * buffer = buffer_write_ptr(&mail_info->retrive_buffer, &read_max);
-
-    // EXP: me muevo hasta donde puede leer la ultima vez asi continuo desde ahi
-    off_t seek = lseek(mail_info->filed_fd, mail_info->bytes_read, SEEK_SET);
-
-    if(seek == -1) {
-        ERROR_CATCH("Error lseek of mail file.", error)
-    }
 
     ssize_t recieved_count = read(mail_info->filed_fd, buffer, read_max);
 
@@ -557,9 +555,16 @@ int retrieve_mail(struct selector_key *key, char * maildir) {
         }
     }
 
-    if(buffer_can_read(&client_data->mail_info->retrive_buffer) && buffer_can_write(&client_data->write_buffer)) {    
-        transfer_bytes(&client_data->mail_info->retrive_buffer, &client_data->write_buffer, &client_data->mail_info->parser);
+    if(buffer_can_write(&client_data->write_buffer)) {
+
+        // EXP: si el read_file apago el interes de lectura (al no haber espacio en el retrieve_buffer), lo prendemos
+        selector_set_interest(key->s, client_data->mail_info->filed_fd, OP_READ);
+
+        if(buffer_can_read(&client_data->mail_info->retrive_buffer)) {
+            transfer_bytes(&client_data->mail_info->retrive_buffer, &client_data->write_buffer, &client_data->mail_info->parser);
+        }
     }
+
 
     if(client_data->mail_info->finished_reading) {
         return finish_mail_retrieval(client_data->mail_info, &client_data->write_buffer);
